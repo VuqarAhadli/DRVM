@@ -1,3 +1,0 @@
-/home/vugar/Projects/DiamondRushEmulator/build/CMakeFiles/drvm.dir
-/home/vugar/Projects/DiamondRushEmulator/build/CMakeFiles/edit_cache.dir
-/home/vugar/Projects/DiamondRushEmulator/build/CMakeFiles/rebuild_cache.dir

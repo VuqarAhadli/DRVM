@@ -6,14 +6,15 @@
 #include <vector>
 #include <memory>
 #include "Common.hpp"
+#include "BinaryReader.hpp"
 
 class ClassFile
 {
 public:
     explicit ClassFile(const std::string& filename);
 
-    void dump() const;
-    void dumpConstantPoolTags(std::ifstream& file) const;
+    void dump();
+    void dumpConstantPoolTags();
 
 private:
     std::string filename;
@@ -22,5 +23,6 @@ private:
     U2 majorVersion;
     U2 constantPoolCount;
 
-    std::vector<std::unique_ptr<ConstantTag>> constantPool;
+    BinaryReader reader;
+
 };

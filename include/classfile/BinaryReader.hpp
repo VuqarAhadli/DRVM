@@ -2,9 +2,9 @@
 
 #include <fstream>
 #include <string>
-#include <types.hpp>
-#include "common.hpp"
-#include "types.hpp"
+#include "Common.hpp"
+#include "Types.hpp"
+#include <vector>
 
 class BinaryReader
 {
@@ -14,7 +14,7 @@ public:
     U1 readU1();
     U2 readU2();
     U4 readU4();
-
+    std::vector<U1> readBytes(std::size_t count);
     void skip(std::size_t bytes);
 
 private:

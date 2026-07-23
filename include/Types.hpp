@@ -11,3 +11,6 @@ using S1 = std::int8_t;
 using S2 = std::int16_t;
 using S4 = std::int32_t;
 using S8 = std::int64_t;
+
+using F4 = float;
+using F8 = double;
