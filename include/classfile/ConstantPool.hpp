@@ -3,6 +3,7 @@
 #include "Common.hpp"
 #include "Types.hpp"
 #include <string>
+#include <utility>
 
 struct CPInfo
 {
@@ -75,6 +76,7 @@ public:
 
 class ConstantFloat : public CPInfo
 {
+public:
 	F4 value;
 
 	ConstantFloat(F4 v)
@@ -136,14 +138,15 @@ public:
 class ConstantNameAndType : public CPInfo
 {
 public:
-	U2 nameIndex;
-	U2 descriptorIndex;
+    U2 nameIndex;
+    U2 descriptorIndex;
 
-	constantNameAndType(U2 nameIndex, U2 descriptorIndex)
-		: CPInfo(ConstantTag::NameAndType),
-		  nameIndex(nameIndex),
-		  descriptorIndex(descriptorIndex)
-	{}
+    ConstantNameAndType(U2 nameIndex, U2 descriptorIndex)
+        : CPInfo(ConstantTag::NameAndType),
+          nameIndex(nameIndex),
+          descriptorIndex(descriptorIndex)
+    {
+    }
 };
 
 class ConstantMethodHandle : public CPInfo
