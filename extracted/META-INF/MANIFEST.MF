@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Created-By: 1.4.1_02 (Sun Microsystems Inc.)
+MicroEdition-Configuration: CLDC-1.1
+MIDlet-Name: Diamond Rush
+MIDlet-Icon: /icon.png
+MIDlet-Vendor: Gameloft SA
+MIDlet-1: Diamond Rush, /icon.png, GloftDIRU
+MIDlet-Version: 1.0.3
+MicroEdition-Profile: MIDP-2.0
