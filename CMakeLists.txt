@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-include(GNUInstallDirs)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include_directories(include)
 
@@ -23,12 +23,7 @@ target_compile_options(drvm PRIVATE
 )
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(drvm PRIVATE
-        -g3
-        -O0
-    )
+    target_compile_options(drvm PRIVATE -g -O0)
 else()
-    target_compile_options(drvm PRIVATE
-        -O3
-    )
+    target_compile_options(drvm PRIVATE -O3)
 endif()

@@ -24,6 +24,10 @@ ClassFile::ClassFile(const std::string& filename)
     minorVersion = reader.readU2();
     majorVersion = reader.readU2();
     constantPoolCount = reader.readU2();
+
+    constantPool.resize(constantPoolCount);
+
+
 }
 
 void ClassFile::dumpConstantPoolTags()
@@ -44,6 +48,9 @@ void ClassFile::dumpConstantPoolTags()
                     std::vector<U1> bytes = reader.readBytes(length);
                     std::string utf8String(bytes.begin(), bytes.end());
                     std::cout << "Utf8: " << utf8String << '\n';
+                    constantPool[i] = std::make_unique<ConstantUtf8>(
+                        utf8String
+                    );
                 }
                 break;
             case ConstantTag::Integer:

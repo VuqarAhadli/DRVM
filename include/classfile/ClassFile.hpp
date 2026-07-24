@@ -7,6 +7,7 @@
 #include <memory>
 #include "Common.hpp"
 #include "BinaryReader.hpp"
+#include "ConstantPool.hpp"
 
 class ClassFile
 {
@@ -24,5 +25,5 @@ private:
     U2 constantPoolCount;
 
     BinaryReader reader;
-
+    std::vector<std::unique_ptr<CPInfo>> constantPool;
 };
