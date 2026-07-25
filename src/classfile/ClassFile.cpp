@@ -28,7 +28,71 @@ ClassFile::ClassFile(const std::string& filename)
     constantPool.resize(constantPoolCount);
     saveConstantPoolTags();
 
+    saveClassMetadata();
 
+}
+
+void ClassFile::saveClassMetadata()
+{
+    accessFlags = reader.readU2();
+    thisClass = reader.readU2();
+    superClass = reader.readU2();
+    interfacesCount = reader.readU2();
+
+    interfaces.resize(interfacesCount);
+    for (U2 i = 0; i < interfacesCount; ++i)
+    {
+        interfaces[i] = reader.readU2();
+    }
+}
+
+void ClassFile::dumpClassMetadata()
+{
+    std::cout << "\nAccess Flags:    0x" << std::hex << accessFlags << std::dec;
+    if (accessFlags & ACC_PUBLIC) std::cout << " PUBLIC";
+    if (accessFlags & ACC_FINAL) std::cout << " FINAL";
+    if (accessFlags & ACC_SUPER) std::cout << " SUPER";
+    if (accessFlags & ACC_INTERFACE) std::cout << " INTERFACE";
+    if (accessFlags & ACC_ABSTRACT) std::cout << " ABSTRACT";
+    if (accessFlags & ACC_MODULE) std::cout << " MODULE";
+    if (accessFlags & ACC_SYNTHETIC) std::cout << " SYNTHETIC";
+    if (accessFlags & ACC_ANNOTATION) std::cout << " ANNOTATION";
+    if (accessFlags & ACC_ENUM) std::cout << " ENUM";
+
+    std::cout << "\nThis Class:      #" << thisClass; // index in the constant pool
+    if (auto* cls = getConstant<ConstantClass>(thisClass))
+    {
+        auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
+        std::cout << " (" << name->value << ")";
+    }
+
+    std::cout << "\nSuper Class:     ";
+    if (superClass == 0)
+    {
+        std::cout << "(none -> this is java/lang/Object)";
+    }
+    else
+    {
+        std::cout << "#" << superClass;
+        auto* cls = getConstant<ConstantClass>(superClass);
+        auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
+        std::cout << " (" << name->value << ")";
+    }
+
+    std::cout << "\nInterfaces:      " << interfacesCount << "\n";
+    if (interfacesCount == 0)
+    {
+        std::cout << "  (none)\n";
+    }
+    else
+    {
+        for (U2 i = 0; i < interfacesCount; ++i)
+        {
+            auto* cls = getConstant<ConstantClass>(interfaces[i]);
+            auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
+            std::cout << "  #" << interfaces[i] << " (" << name->value << ")\n";
+        }
+    }
 }
 
 void ClassFile::saveConstantPoolTags()
@@ -386,4 +450,5 @@ void ClassFile::dump()
     std::cout << std::dec << std::nouppercase; 
 
     dumpConstantPoolTags();
+    dumpClassMetadata();
 }

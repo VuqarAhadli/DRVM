@@ -40,8 +40,8 @@ public:
     explicit ClassFile(const std::string& filename);
 
     void dump();
-    void saveConstantPoolTags();
     void dumpConstantPoolTags();
+    void dumpClassMetadata();
 
     template<typename T>
     T* getConstant(U2 index)
@@ -51,6 +51,8 @@ public:
 
 private:
     void saveClassMetadata();
+    void saveConstantPoolTags();
+
 
     std::string filename;
     U4 magic;
@@ -62,6 +64,7 @@ private:
     U2 accessFlags;
     U2 thisClass;
     U2 superClass;
+    U2 interfacesCount;
     std::vector<U2> interfaces;
 
     BinaryReader reader;
