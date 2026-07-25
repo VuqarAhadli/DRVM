@@ -6,10 +6,10 @@
 #include <stdexcept>
 
 
-inline ConstantTag readConstantTag(U1 value)
-{
-    return static_cast<ConstantTag>(value);
-}
+// inline ConstantTag readConstantTag(U1 value)
+// {
+//     return static_cast<ConstantTag>(value);
+// }
 
 ClassFile::ClassFile(const std::string& filename)
     : filename(filename), reader(filename)
@@ -32,7 +32,8 @@ ClassFile::ClassFile(const std::string& filename)
 
 void ClassFile::dumpConstantPoolTags()
 {
-    for (U2 i = 1; i < constantPoolCount; ++i)
+    U4 ind = 0;
+    for (U2 i = 1; i < constantPoolCount; ++i, ++ind)
     {
       ConstantTag tag = static_cast<ConstantTag>(reader.readU1());
 
@@ -48,7 +49,7 @@ void ClassFile::dumpConstantPoolTags()
                     std::vector<U1> bytes = reader.readBytes(length);
                     std::string utf8String(bytes.begin(), bytes.end());
                     std::cout << "Utf8: " << utf8String << '\n';
-                    constantPool[i] = std::make_unique<ConstantUtf8>(
+                    constantPool[ind] = std::make_unique<ConstantUtf8>(
                         utf8String
                     );
                 }
@@ -57,7 +58,7 @@ void ClassFile::dumpConstantPoolTags()
                 {
                     U4 value = reader.readU4();
                     std::cout << "Integer: " << value << '\n';
-                    constantPool[i] = std::make_unique<ConstantInteger>(
+                    constantPool[ind] = std::make_unique<ConstantInteger>(
                         value
                     );
                 }
@@ -68,7 +69,7 @@ void ClassFile::dumpConstantPoolTags()
                     float floatValue;
                     std::memcpy(&floatValue, &value, sizeof(float));
                     std::cout << "Float: " << floatValue << '\n';
-                    constantPool[i] = std::make_unique<ConstantFloat>(
+                    constantPool[ind] = std::make_unique<ConstantFloat>(
                         value
                     );
                 }
@@ -79,11 +80,12 @@ void ClassFile::dumpConstantPoolTags()
                     U4 lowBytes = reader.readU4();
                     U8 longValue = (static_cast<U8>(highBytes) << 32) | lowBytes;
                     std::cout << "Long: " << longValue << '\n';
-                    constantPool[i] = std::make_unique<ConstantLong>(
+                    constantPool[ind] = std::make_unique<ConstantLong>(
                         longValue
                     );
                 }
                 ++i;  /* Long/Double take two constant pool entries */
+                ++ind;
                 break;
             case ConstantTag::Double:
                 {
@@ -93,17 +95,18 @@ void ClassFile::dumpConstantPoolTags()
                     double doubleValue;
                     std::memcpy(&doubleValue, &doubleBits, sizeof(double));
                     std::cout << "Double: " << doubleValue << '\n';
-                    constantPool[i] = std::make_unique<ConstantDouble>(
+                    constantPool[ind] = std::make_unique<ConstantDouble>(
                         doubleValue
                     );
                 }
                 ++i;  /* Long/Double take two constant pool entries */
+                ++ind;
                 break;
             case ConstantTag::Class:
                 {
                     U2 nameIndex = reader.readU2();
                     std::cout << "Class: name_index=" << nameIndex << '\n';
-                    constantPool[i] = std::make_unique<ConstantClass>(
+                    constantPool[ind] = std::make_unique<ConstantClass>(
                         nameIndex
                     );
                 }
@@ -112,7 +115,7 @@ void ClassFile::dumpConstantPoolTags()
                 {
                     U2 stringIndex = reader.readU2();
                     std::cout << "String: string_index=" << stringIndex << '\n';
-                    constantPool[i] = std::make_unique<ConstantString>(
+                    constantPool[ind] = std::make_unique<ConstantString>(
                         stringIndex
                     );
                 }
@@ -123,7 +126,7 @@ void ClassFile::dumpConstantPoolTags()
                     U2 nameAndTypeIndex = reader.readU2();
                     std::cout << "Fieldref: class_index=" << classIndex
                             << " name_and_type_index=" << nameAndTypeIndex << '\n';
-                    constantPool[i] = std::make_unique<ConstantFieldref>(
+                    constantPool[ind] = std::make_unique<ConstantFieldref>(
                         classIndex, nameAndTypeIndex
                     );
                 }
@@ -134,7 +137,7 @@ void ClassFile::dumpConstantPoolTags()
                     U2 nameAndTypeIndex = reader.readU2();
                     std::cout << "Methodref: class_index=" << classIndex
                               << " name_and_type_index=" << nameAndTypeIndex << '\n';
-                    constantPool[i] = std::make_unique<ConstantMethodref>(
+                    constantPool[ind] = std::make_unique<ConstantMethodref>(
                         classIndex, nameAndTypeIndex
                     );
                 }
@@ -145,6 +148,9 @@ void ClassFile::dumpConstantPoolTags()
                     U2 nameAndTypeIndex = reader.readU2();
                     std::cout << "InterfaceMethodref: class_index=" << classIndex
                               << " name_and_type_index=" << nameAndTypeIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantInterfaceMethodref>(
+                        classIndex, nameAndTypeIndex
+                    );
                 }
                 break;
             case ConstantTag::NameAndType:
@@ -153,6 +159,9 @@ void ClassFile::dumpConstantPoolTags()
                     U2 descriptorIndex = reader.readU2();
                     std::cout << "NameAndType: name_index=" << nameIndex
                               << " descriptor_index=" << descriptorIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantNameAndType>(
+                        nameIndex, descriptorIndex
+                    );
                 }
                 break;
             case ConstantTag::MethodHandle:
@@ -161,12 +170,18 @@ void ClassFile::dumpConstantPoolTags()
                     U2 referenceIndex = reader.readU2();
                     std::cout << "MethodHandle: reference_kind=" << static_cast<int>(referenceKind)
                               << " reference_index=" << referenceIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantMethodHandle>(
+                        referenceKind, referenceIndex
+                    );
                 }
                 break;
             case ConstantTag::MethodType:
                 {
                     U2 descriptorIndex = reader.readU2();
                     std::cout << "MethodType: descriptor_index=" << descriptorIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantMethodType>(
+                        descriptorIndex
+                    );
                 }
                 break;
             case ConstantTag::Dynamic:
@@ -175,6 +190,9 @@ void ClassFile::dumpConstantPoolTags()
                     U2 nameAndTypeIndex = reader.readU2();
                     std::cout << "Dynamic: bootstrap_method_attr_index=" << bootstrapMethodAttrIndex
                               << " name_and_type_index=" << nameAndTypeIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantDynamic>(
+                        bootstrapMethodAttrIndex, nameAndTypeIndex
+                    );
                 }
                 break;
             case ConstantTag::InvokeDynamic:
@@ -183,18 +201,27 @@ void ClassFile::dumpConstantPoolTags()
                     U2 nameAndTypeIndex = reader.readU2();
                     std::cout << "InvokeDynamic: bootstrap_method_attr_index=" << bootstrapMethodAttrIndex
                               << " name_and_type_index=" << nameAndTypeIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantInvokeDynamic>(
+                        bootstrapMethodAttrIndex, nameAndTypeIndex
+                    );
                 }
                 break;
             case ConstantTag::Module:
                 {
                     U2 nameIndex = reader.readU2();
                     std::cout << "Module: name_index=" << nameIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantModule>(
+                        nameIndex
+                    );
                 }
                 break;
             case ConstantTag::Package:
                 {
                     U2 nameIndex = reader.readU2();
                     std::cout << "Package: name_index=" << nameIndex << '\n';
+                    constantPool[ind] = std::make_unique<ConstantPackage>(
+                        nameIndex
+                    );
                 }
                 break;
             default:
@@ -220,12 +247,9 @@ void ClassFile::dump()
               << '\n'
               << "Constant Pool Count: "
               << constantPoolCount - 1
-              << '\n';        
-
-    std::ifstream file(filename, std::ios::binary);
-
-    if (!file)
-        throw std::runtime_error("Could not reopen class file.");
+              << '\n';      
+    
+    std::cout << std::dec << std::nouppercase; 
 
     dumpConstantPoolTags();
 }
