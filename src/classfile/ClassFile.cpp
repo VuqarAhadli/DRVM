@@ -93,6 +93,9 @@ void ClassFile::dumpConstantPoolTags()
                     double doubleValue;
                     std::memcpy(&doubleValue, &doubleBits, sizeof(double));
                     std::cout << "Double: " << doubleValue << '\n';
+                    constantPool[i] = std::make_unique<ConstantDouble>(
+                        doubleValue
+                    );
                 }
                 ++i;  /* Long/Double take two constant pool entries */
                 break;
@@ -100,12 +103,18 @@ void ClassFile::dumpConstantPoolTags()
                 {
                     U2 nameIndex = reader.readU2();
                     std::cout << "Class: name_index=" << nameIndex << '\n';
+                    constantPool[i] = std::make_unique<ConstantClass>(
+                        nameIndex
+                    );
                 }
                 break;
             case ConstantTag::String:
                 {
                     U2 stringIndex = reader.readU2();
                     std::cout << "String: string_index=" << stringIndex << '\n';
+                    constantPool[i] = std::make_unique<ConstantString>(
+                        stringIndex
+                    );
                 }
                 break;
             case ConstantTag::Fieldref:
@@ -114,6 +123,9 @@ void ClassFile::dumpConstantPoolTags()
                     U2 nameAndTypeIndex = reader.readU2();
                     std::cout << "Fieldref: class_index=" << classIndex
                             << " name_and_type_index=" << nameAndTypeIndex << '\n';
+                    constantPool[i] = std::make_unique<ConstantFieldref>(
+                        classIndex, nameAndTypeIndex
+                    );
                 }
                 break;
             case ConstantTag::Methodref:
@@ -122,6 +134,9 @@ void ClassFile::dumpConstantPoolTags()
                     U2 nameAndTypeIndex = reader.readU2();
                     std::cout << "Methodref: class_index=" << classIndex
                               << " name_and_type_index=" << nameAndTypeIndex << '\n';
+                    constantPool[i] = std::make_unique<ConstantMethodref>(
+                        classIndex, nameAndTypeIndex
+                    );
                 }
                 break;
             case ConstantTag::InterfaceMethodref:
