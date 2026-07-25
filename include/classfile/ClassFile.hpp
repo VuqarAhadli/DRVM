@@ -15,6 +15,7 @@ public:
     explicit ClassFile(const std::string& filename);
 
     void dump();
+    void saveConstantPoolTags();
     void dumpConstantPoolTags();
 
 private:
