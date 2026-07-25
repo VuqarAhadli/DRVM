@@ -57,6 +57,9 @@ void ClassFile::dumpConstantPoolTags()
                 {
                     U4 value = reader.readU4();
                     std::cout << "Integer: " << value << '\n';
+                    constantPool[i] = std::make_unique<ConstantInteger>(
+                        value
+                    );
                 }
                 break;
             case ConstantTag::Float:
@@ -65,6 +68,9 @@ void ClassFile::dumpConstantPoolTags()
                     float floatValue;
                     std::memcpy(&floatValue, &value, sizeof(float));
                     std::cout << "Float: " << floatValue << '\n';
+                    constantPool[i] = std::make_unique<ConstantFloat>(
+                        value
+                    );
                 }
                 break;
             case ConstantTag::Long:
@@ -73,6 +79,9 @@ void ClassFile::dumpConstantPoolTags()
                     U4 lowBytes = reader.readU4();
                     U8 longValue = (static_cast<U8>(highBytes) << 32) | lowBytes;
                     std::cout << "Long: " << longValue << '\n';
+                    constantPool[i] = std::make_unique<ConstantLong>(
+                        longValue
+                    );
                 }
                 ++i;  /* Long/Double take two constant pool entries */
                 break;
