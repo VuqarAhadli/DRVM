@@ -66,7 +66,7 @@ void ClassFile::dumpClassMetadata()
         std::cout << " (" << name->value << ")";
     }
 
-    std::cout << "\nSuper Class:     ";
+    std::cout << "\nSuper Class:     "; // index in the constant pool
     if (superClass == 0)
     {
         std::cout << "(none -> this is java/lang/Object)";
@@ -75,9 +75,13 @@ void ClassFile::dumpClassMetadata()
     {
         std::cout << "#" << superClass;
         auto* cls = getConstant<ConstantClass>(superClass);
-        auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
-        std::cout << " (" << name->value << ")";
+        if (cls)
+        {
+            auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
+            std::cout << " (" << name->value << ")";
+        }
     }
+    
 
     std::cout << "\nInterfaces:      " << interfacesCount << "\n";
     if (interfacesCount == 0)
