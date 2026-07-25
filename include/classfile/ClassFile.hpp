@@ -18,6 +18,12 @@ public:
     void saveConstantPoolTags();
     void dumpConstantPoolTags();
 
+    template<typename T>
+    T* getConstant(U2 index)
+    {
+        return static_cast<T*>(constantPool.at(index).get());
+    }
+
 private:
     std::string filename;
     U4 magic;

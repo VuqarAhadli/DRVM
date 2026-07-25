@@ -65,7 +65,7 @@ void ClassFile::saveConstantPoolTags()
                     std::memcpy(&floatValue, &value, sizeof(float));
 
                     constantPool[i] = std::make_unique<ConstantFloat>(
-                        value
+                        floatValue
                     );
                 }
                 break;
@@ -220,164 +220,146 @@ void ClassFile::saveConstantPoolTags()
     }
 }
 
+
+
 void ClassFile::dumpConstantPoolTags()
 {
     for (U2 i = 1; i < constantPoolCount; ++i)
     {
-      ConstantTag tag = readConstantTag(reader.readU1());
 
-        std::cout << "#" << i
-              << " Tag: "
-              << static_cast<int>(tag)
-              << '\n';
-        switch (tag)
+        if (!constantPool[i])
+        {
+            continue;
+        }
+
+        switch (constantPool.at(i) -> tag)
         {
             case ConstantTag::Utf8:
                 {
-                    U2 length = reader.readU2();
-                    std::vector<U1> bytes = reader.readBytes(length);
-                    std::string utf8String(bytes.begin(), bytes.end());
-                    std::cout << "Utf8: " << utf8String << '\n';
+                    auto* utf8 = getConstant<ConstantUtf8>(i);
+                    std::cout << "#" << i
+                              << " Utf8: "
+                              << utf8 -> value
+                              << "\n";
                 }
                 break;
             case ConstantTag::Integer:
                 {
-                    U4 value = reader.readU4();
-                    std::cout << "Integer: " << value << '\n';
+                    auto* integer = getConstant<ConstantInteger>(i);
+                    std::cout << "#" << i
+                              << " Integer: "
+                              << integer -> value
+                              << "\n";
 
                 }
                 break;
             case ConstantTag::Float:
-                {
-                    U4 value = reader.readU4();
-                    float floatValue;
-                    std::memcpy(&floatValue, &value, sizeof(float));
-                    std::cout << "Float: " << floatValue << '\n';
-
-                }
+            {
+                auto* f = getConstant<ConstantFloat>(i);
+                std::cout << "#" << i << " Float: " << f->value << "\n";
                 break;
+            }
             case ConstantTag::Long:
-                {
-                    U4 highBytes = reader.readU4();
-                    U4 lowBytes = reader.readU4();
-                    U8 longValue = (static_cast<U8>(highBytes) << 32) | lowBytes;
-                    std::cout << "Long: " << longValue << '\n';
-
-                }
+            {
+                auto* l = getConstant<ConstantLong>(i);
+                std::cout << "#" << i << " Long: " << l->value << "\n";
                 ++i;  /* Long/Double take two constant pool entries */
                 break;
+            }
             case ConstantTag::Double:
-                {
-                    U4 highBytes = reader.readU4();
-                    U4 lowBytes = reader.readU4();
-                    U8 doubleBits = (static_cast<U8>(highBytes) << 32) | lowBytes;
-                    double doubleValue;
-                    std::memcpy(&doubleValue, &doubleBits, sizeof(double));
-                    std::cout << "Double: " << doubleValue << '\n';
-
-                }
+            {
+                auto* d = getConstant<ConstantDouble>(i);
+                std::cout << "#" << i << " Double: " << d->value << "\n";
                 ++i;  /* Long/Double take two constant pool entries */
                 break;
+            }
             case ConstantTag::Class:
-                {
-                    U2 nameIndex = reader.readU2();
-                    std::cout << "Class: name_index=" << nameIndex << '\n';
-
-                }
+            {
+                auto* c = getConstant<ConstantClass>(i);
+                std::cout << "#" << i << " Class: name_index=" << c->nameIndex << "\n";
                 break;
+            }
             case ConstantTag::String:
-                {
-                    U2 stringIndex = reader.readU2();
-                    std::cout << "String: string_index=" << stringIndex << '\n';
-
-                }
+            {
+                auto* s = getConstant<ConstantString>(i);
+                std::cout << "#" << i << " String: string_index=" << s->stringIndex << "\n";
                 break;
+            }
             case ConstantTag::Fieldref:
-                {
-                    U2 classIndex = reader.readU2();
-                    U2 nameAndTypeIndex = reader.readU2();
-                    std::cout << "Fieldref: class_index=" << classIndex
-                            << " name_and_type_index=" << nameAndTypeIndex << '\n';
-
-                }
+            {
+                auto* f = getConstant<ConstantFieldref>(i);
+                std::cout << "#" << i << " Fieldref: class_index=" << f->classIndex
+                           << " name_and_type_index=" << f->nameAndTypeIndex << "\n";
                 break;
+            }
             case ConstantTag::Methodref:
-                {
-                    U2 classIndex = reader.readU2();
-                    U2 nameAndTypeIndex = reader.readU2();
-                    std::cout << "Methodref: class_index=" << classIndex
-                              << " name_and_type_index=" << nameAndTypeIndex << '\n';
-
-                }
+            {
+                auto* m = getConstant<ConstantMethodref>(i);
+                std::cout << "#" << i << " Methodref: class_index=" << m->classIndex
+                           << " name_and_type_index=" << m->nameAndTypeIndex << "\n";
                 break;
+            }
             case ConstantTag::InterfaceMethodref:
-                {
-                    U2 classIndex = reader.readU2();
-                    U2 nameAndTypeIndex = reader.readU2();
-                    std::cout << "InterfaceMethodref: class_index=" << classIndex
-                              << " name_and_type_index=" << nameAndTypeIndex << '\n';
-
-                }
+            {
+                auto* m = getConstant<ConstantInterfaceMethodref>(i);
+                std::cout << "#" << i << " InterfaceMethodref: class_index=" << m->classIndex
+                           << " name_and_type_index=" << m->nameAndTypeIndex << "\n";
                 break;
+            }
             case ConstantTag::NameAndType:
-                {
-                    U2 nameIndex = reader.readU2();
-                    U2 descriptorIndex = reader.readU2();
-                    std::cout << "NameAndType: name_index=" << nameIndex
-                              << " descriptor_index=" << descriptorIndex << '\n';
-
-                }
+            {
+                auto* nt = getConstant<ConstantNameAndType>(i);
+                std::cout << "#" << i << " NameAndType: name_index=" << nt->nameIndex
+                           << " descriptor_index=" << nt->descriptorIndex << "\n";
                 break;
+            }
             case ConstantTag::MethodHandle:
-                {
-                    U1 referenceKind = reader.readU1();
-                    U2 referenceIndex = reader.readU2();
-                    std::cout << "MethodHandle: reference_kind=" << static_cast<int>(referenceKind)
-                              << " reference_index=" << referenceIndex << '\n';
-
-                }
+            {
+                auto* mh = getConstant<ConstantMethodHandle>(i);
+                std::cout << "#" << i << " MethodHandle: reference_kind="
+                           << static_cast<int>(mh->referenceKind)
+                           << " reference_index=" << mh->referenceIndex << "\n";
                 break;
+            }
             case ConstantTag::MethodType:
-                {
-                    U2 descriptorIndex = reader.readU2();
-                    std::cout << "MethodType: descriptor_index=" << descriptorIndex << '\n';
-
-                }
+            {
+                auto* mt = getConstant<ConstantMethodType>(i);
+                std::cout << "#" << i << " MethodType: descriptor_index="
+                           << mt->descriptorIndex << "\n";
                 break;
+            }
             case ConstantTag::Dynamic:
-                {
-                    U2 bootstrapMethodAttrIndex = reader.readU2();
-                    U2 nameAndTypeIndex = reader.readU2();
-                    std::cout << "Dynamic: bootstrap_method_attr_index=" << bootstrapMethodAttrIndex
-                              << " name_and_type_index=" << nameAndTypeIndex << '\n';
-
-                }
+            {
+                auto* dyn = getConstant<ConstantDynamic>(i);
+                std::cout << "#" << i << " Dynamic: bootstrap_method_attr_index="
+                           << dyn->bootstrapMethodAttrIndex
+                           << " name_and_type_index=" << dyn->nameAndTypeIndex << "\n";
                 break;
+            }
             case ConstantTag::InvokeDynamic:
-                {
-                    U2 bootstrapMethodAttrIndex = reader.readU2();
-                    U2 nameAndTypeIndex = reader.readU2();
-                    std::cout << "InvokeDynamic: bootstrap_method_attr_index=" << bootstrapMethodAttrIndex
-                              << " name_and_type_index=" << nameAndTypeIndex << '\n';
-
-                }
+            {
+                auto* inv = getConstant<ConstantInvokeDynamic>(i);
+                std::cout << "#" << i << " InvokeDynamic: bootstrap_method_attr_index="
+                           << inv->bootstrapMethodAttrIndex
+                           << " name_and_type_index=" << inv->nameAndTypeIndex << "\n";
                 break;
+            }
             case ConstantTag::Module:
-                {
-                    U2 nameIndex = reader.readU2();
-                    std::cout << "Module: name_index=" << nameIndex << '\n';
-
-                }
+            {
+                auto* mod = getConstant<ConstantModule>(i);
+                std::cout << "#" << i << " Module: name_index=" << mod->nameIndex << "\n";
                 break;
+            }
             case ConstantTag::Package:
-                {
-                    U2 nameIndex = reader.readU2();
-                    std::cout << "Package: name_index=" << nameIndex << '\n';
-
-                }
+            {
+                auto* pkg = getConstant<ConstantPackage>(i);
+                std::cout << "#" << i << " Package: name_index=" << pkg->nameIndex << "\n";
                 break;
+            }
             default:
-                throw std::runtime_error("Unknown constant pool tag: " + std::to_string(static_cast<int>(tag)));
+                throw std::runtime_error(
+                    "Unknown constant pool tag: " +
+                    std::to_string(static_cast<int>(constantPool[i]->tag)));
         }
     }
 }
