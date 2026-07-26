@@ -32,6 +32,62 @@ ClassFile::ClassFile(const std::string& filename)
 
 }
 
+std::unique_ptr<AttributeInfo> ClassFile::readAttribute()
+{
+    U2 nameIndex = reader.readU2();
+    U4 length = reader.readU4();
+
+    std::string name = getConstant<ConstantUtf8>(nameIndex)->value;
+
+    if(name == "Code")
+    {
+        U2 maxStack = reader.readU2();
+        U2 maxLocals = reader.readU2();
+        U4 codeLength = reader.readU4();
+        std::vector<U1> code = reader.readBytes(codeLength);
+
+        U2 exceptionTableLength = reader.readU2();
+        std::vector<ExceptionTableEntry> exceptionTable(exceptionTableLength);
+
+        for(auto& entry : exceptionTable)
+        {
+            entry.startPc = reader.readU2();
+            entry.endPc = reader.readU2();
+            entry.handlerPc = reader.readU2(); 
+            entry.catchType = reader.readU2();
+        }
+
+        U2 nestedAttributeCount = reader.readU2();
+        std::vector<std::unique_ptr<AttributeInfo>> nestedAttributes(nestedAttributeCount);
+        for (auto& attribute : nestedAttributes)
+        {
+            attribute = readAttribute();
+        }
+
+        return std::make_unique<CodeAttribute>(
+            nameIndex, length, maxStack, maxLocals,
+            std::move(code), std::move(exceptionTable), std::move(nestedAttributes)
+        );
+    }
+
+    if (name == "ConstantValue")
+    {
+        U2 constantValueIndex = reader.readU2();
+         return std::make_unique<ConstantValueAttribute>(
+             nameIndex, length, constantValueIndex
+         );
+    }
+
+    if (name == "Exceptions")
+    {
+        U2 numberOfExceptions = reader.readU2();
+        std::vector<U2> exceptionIndexTable(numberOfExceptions);
+    }
+}
+
+
+
+
 void ClassFile::saveClassMetadata()
 {
     accessFlags = reader.readU2();

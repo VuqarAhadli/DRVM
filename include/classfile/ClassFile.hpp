@@ -26,12 +26,12 @@
     u2             super_class;                          | COVERED
     u2             interfaces_count;                     | COVERED
     u2             interfaces[interfaces_count];         | COVERED
-    u2             fields_count;                         | TODO
-    field_info     fields[fields_count];                 | TODO
-    u2             methods_count;                        | TODO
-    method_info    methods[methods_count];               | TODO
-    u2             attributes_count;                     | TODO
-    attribute_info attributes[attributes_count];         | TODO
+    u2             fields_count;                         | COVERED
+    field_info     fields[fields_count];                 | COVERED
+    u2             methods_count;                        | COVERED
+    method_info    methods[methods_count];               | COVERED
+    u2             attributes_count;                     | COVERED
+    attribute_info attributes[attributes_count];         | COVERED
     }
  * 
  */
@@ -45,6 +45,9 @@ public:
     void dump();
     void dumpConstantPoolTags();
     void dumpClassMetadata();
+    void dumpFields();
+    void dumpMethods();
+    void dumpAttributes();
 
     template<typename T>
     T* getConstant(U2 index)
@@ -55,7 +58,10 @@ public:
 private:
     void saveClassMetadata();
     void saveConstantPoolTags();
-
+    void saveFields();
+    void saveMethods();
+    void saveAttributes();
+    std::unique_ptr<AttributeInfo> readAttribute();
 
     std::string filename;
     U4 magic;
@@ -75,7 +81,7 @@ private:
     U2 methodsCount;
     std::vector<MethodInfo> methods;
     U2 attributesCount;
-    std::vector<AttributeInfo> attributes;    
+    std::vector<std::unique_ptr<AttributeInfo>> attributes; 
 
     BinaryReader reader;
 };

@@ -63,12 +63,12 @@ struct AttributeInfo
     virtual ~AttributeInfo() = default;
 };
 
-class RawAttribute : public AttributeInfo
+class GenericAttribute : public AttributeInfo
 {
 public:
     std::vector<U1> info;
 
-    RawAttribute(U2 nameIndex, U4 length, std::vector<U1> info)
+    GenericAttribute(U2 nameIndex, U4 length, std::vector<U1> info)
         : AttributeInfo(nameIndex, length),
           info(std::move(info))
     {

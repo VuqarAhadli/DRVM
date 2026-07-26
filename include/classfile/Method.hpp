@@ -26,5 +26,5 @@ public:
     U2 nameIndex;
     U2 descriptorIndex;
     U2 attributesCount;
-    std::vector<AttributeInfo> attributes;
+    std::vector<std::unique_ptr<AttributeInfo>> attributes;
 };
