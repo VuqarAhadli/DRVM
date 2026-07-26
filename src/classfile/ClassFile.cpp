@@ -29,7 +29,105 @@ ClassFile::ClassFile(const std::string& filename)
     saveConstantPoolTags();
 
     saveClassMetadata();
+    saveFields();
+    saveMethods();
+    saveAttributes();
 
+}
+
+
+void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
+{
+    std::string pad(indent, ' ');
+    std::string name = getConstant<ConstantUtf8>(attribute->attributeNameIndex) -> value;
+
+    if (auto* code = dynamic_cast<const CodeAttribute*>(attribute))
+    {
+        std::cout << pad << "Code: max_stack=" << code->maxStack
+                   << " max_locals=" << code->maxLocals
+                   << " code_length=" << code->codeLength << "\n";
+
+        if (!code->exceptionTable.empty())
+        {
+            std::cout << pad << "  Exception Table:\n";
+            for (auto& e : code->exceptionTable)
+            {
+                std::cout << pad << "    start_pc=" << e.startPc
+                           << " end_pc=" << e.endPc
+                           << " handler_pc=" << e.handlerPc
+                           << " catch_type=" << e.catchType << "\n";
+            }
+        }
+
+        for (auto& nested : code->attributes)
+        {
+            dumpAttribute(nested.get(), indent + 2);
+        }
+    }
+    else if (auto* cv = dynamic_cast<const ConstantValueAttribute*>(attribute))
+    {
+        std::cout << pad << "ConstantValue: constant_value_index=" << cv->constantValueIndex << "\n";
+    }
+    else if (auto* ex = dynamic_cast<const ExceptionsAttribute*>(attribute))
+    {
+        std::cout << pad << "Exceptions: ";
+        for (U2 index : ex->exceptionIndexTable)
+        {
+            std::cout << "#" << index << " ";
+        }
+        std::cout << "\n";
+    }
+    else
+    {
+        std::cout << pad << name << " (Generic/Unknown attr. " << attribute->attributeLength << " bytes)\n";
+    }
+}
+
+void ClassFile::dumpFields()
+{
+    std::cout << "\nFields: " << fieldsCount << "\n";
+    for (U2 i = 0; i < fieldsCount; ++i)
+    {
+        auto* name = getConstant<ConstantUtf8>(fields[i].nameIndex);
+        auto* descriptor = getConstant<ConstantUtf8>(fields[i].descriptorIndex);
+
+        std::cout << "  #" << i << " " << name->value
+                   << " : " << descriptor->value
+                   << " (access_flags=0x" << std::hex << fields[i].accessFlags << std::dec << ")\n";
+
+        for (auto& attribute : fields[i].attributes)
+        {
+            dumpAttribute(attribute.get(), 4);
+        }
+    }
+}
+
+void ClassFile::dumpMethods()
+{
+    std::cout << "\nMethods: " << methodsCount << "\n";
+    for (U2 i = 0; i < methodsCount; ++i)
+    {
+        auto* name = getConstant<ConstantUtf8>(methods[i].nameIndex);
+        auto* descriptor = getConstant<ConstantUtf8>(methods[i].descriptorIndex);
+
+        std::cout << "  #" << i << " " << name->value
+                   << " : " << descriptor->value
+                   << " (access_flags=0x" << std::hex << methods[i].accessFlags << std::dec << ")\n";
+
+        for (auto& attribute : methods[i].attributes)
+        {
+            dumpAttribute(attribute.get(), 4);
+        }
+    }
+}
+
+void ClassFile::dumpAttributes()
+{
+    std::cout << "\nClass Attributes: " << attributesCount << "\n";
+    for (auto& attribute : attributes)
+    {
+        dumpAttribute(attribute.get(), 2);
+    }
 }
 
 std::unique_ptr<AttributeInfo> ClassFile::readAttribute()
@@ -82,11 +180,70 @@ std::unique_ptr<AttributeInfo> ClassFile::readAttribute()
     {
         U2 numberOfExceptions = reader.readU2();
         std::vector<U2> exceptionIndexTable(numberOfExceptions);
+        for (auto& index : exceptionIndexTable)
+        {
+            index = reader.readU2();
+        }
+        return std::make_unique<ExceptionsAttribute>(
+             nameIndex, length, numberOfExceptions,
+             std::move(exceptionIndexTable)
+         );
     }
+    std::vector<U1> raw = reader.readBytes(length);
+    return std::make_unique<GenericAttribute>(nameIndex, length, std::move(raw));
 }
 
 
+void ClassFile::saveFields()
+{
+    fieldsCount = reader.readU2();
+    fields.resize(fieldsCount);
 
+    for (U2 i = 0; i < fieldsCount; ++i)
+    {
+        fields[i].accessFlags = reader.readU2();
+        fields[i].nameIndex = reader.readU2();
+        fields[i].descriptorIndex = reader.readU2();
+        fields[i].attributesCount = reader.readU2();
+
+        fields[i].attributes.resize(fields[i].attributesCount);
+        for (U2 j = 0; j < fields[i].attributesCount; ++j)
+        {
+            fields[i].attributes[j] = readAttribute();
+        }
+    }
+}
+
+void ClassFile::saveMethods()
+{
+    methodsCount = reader.readU2();
+    methods.resize(methodsCount);
+
+    for (U2 i = 0; i < methodsCount; ++i)
+    {
+        methods[i].accessFlags = reader.readU2();
+        methods[i].nameIndex = reader.readU2();
+        methods[i].descriptorIndex = reader.readU2();
+        methods[i].attributesCount = reader.readU2();
+
+        methods[i].attributes.resize(methods[i].attributesCount);
+        for (U2 j = 0; j < methods[i].attributesCount; ++j)
+        {
+            methods[i].attributes[j] = readAttribute();
+        }
+    }
+}
+
+void ClassFile::saveAttributes()
+{
+    attributesCount = reader.readU2();
+    attributes.resize(attributesCount);
+
+    for (U2 i = 0; i < attributesCount; ++i)
+    {
+        attributes[i] = readAttribute();
+    }
+}
 
 void ClassFile::saveClassMetadata()
 {
@@ -511,4 +668,7 @@ void ClassFile::dump()
 
     dumpConstantPoolTags();
     dumpClassMetadata();
+    dumpFields();
+    dumpMethods();
+    dumpAttributes();
 }

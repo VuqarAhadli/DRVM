@@ -61,6 +61,7 @@ private:
     void saveFields();
     void saveMethods();
     void saveAttributes();
+    void dumpAttribute(const AttributeInfo* attribute, int indent = 0);
     std::unique_ptr<AttributeInfo> readAttribute();
 
     std::string filename;
