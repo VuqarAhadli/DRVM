@@ -44,6 +44,11 @@
     MethodParameters 	                    52.0 	8 	    §4.7.24
  */
 
+
+/** For an emulator like this, I think implementing
+  * only the Code, ConstantValue, and Exceptions are attributes is enough.
+  * 
+  */
 struct AttributeInfo
 {
     U2 attributeNameIndex;
@@ -102,3 +107,39 @@ public:
     {
     }
 };
+
+
+//   ConstantValueAttribute
+//   ExceptionsAttribute
+//   StackMapTableAttribute
+
+class ConstantValueAttribute : public AttributeInfo
+{
+public:
+
+    U2 constantValueIndex;
+
+    ConstantValueAttribute(U2 nameIndex, U4 length, U2 constantValueIndex)
+        : AttributeInfo(nameIndex, length),
+          constantValueIndex(constantValueIndex)
+    {
+    }
+};
+
+class ExceptionsAttribute : public AttributeInfo
+{
+public:
+
+    U2 numberOfExceptions;
+    std::vector<U2> exceptionIndexTable;
+
+    ExceptionsAttribute(U2 nameIndex, U4 length, U2 numberOfExceptions, std::vector<U2> exceptionIndexTable)
+        : AttributeInfo(nameIndex, length),
+          numberOfExceptions(numberOfExceptions),
+          exceptionIndexTable(std::move(exceptionIndexTable))
+    {
+    }
+};
+
+
+
