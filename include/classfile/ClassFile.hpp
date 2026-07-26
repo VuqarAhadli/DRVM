@@ -8,6 +8,9 @@
 #include "Common.hpp"
 #include "BinaryReader.hpp"
 #include "ConstantPool.hpp"
+#include "Field.hpp"
+#include "Method.hpp"
+#include "Attribute.hpp"
 
 /**
  * 
@@ -66,6 +69,13 @@ private:
     U2 superClass;
     U2 interfacesCount;
     std::vector<U2> interfaces;
+
+    U2 fieldsCount;
+    std::vector<FieldInfo> fields;
+    U2 methodsCount;
+    std::vector<MethodInfo> methods;
+    U2 attributesCount;
+    std::vector<AttributeInfo> attributes;    
 
     BinaryReader reader;
 };
