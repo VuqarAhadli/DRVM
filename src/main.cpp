@@ -1,6 +1,8 @@
 #include <iostream>
 
 #include "classfile/ClassFile.hpp"
+#include "vm/ClassLoader.hpp"
+#include "vm/VM.hpp"
 
 int main(int argc, char** argv)
 {

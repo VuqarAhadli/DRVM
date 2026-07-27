@@ -49,10 +49,63 @@ public:
     void dumpMethods();
     void dumpAttributes();
 
+    const std::vector<MethodInfo>& getMethods() const 
+    {
+        return methods;
+    }
+
+    const std::vector<FieldInfo>& getFields() const 
+    { 
+        return fields;
+    }
+
+    U2 getThisClass() const 
+    { 
+        return thisClass;
+    }
+
+    U2 getSuperClass() const 
+    { 
+        return superClass;
+    }
+
+
+
     template<typename T>
     T* getConstant(U2 index)
     {
         return static_cast<T*>(constantPool.at(index).get());
+    }
+
+    std::string getClassName()
+    {
+        auto* cls = getConstant<ConstantClass>(thisClass);
+        return getConstant<ConstantUtf8>(cls->nameIndex)->value;
+    }
+
+    const MethodInfo* findMethod(const std::string& name, const std::string& descriptor)
+    {
+        for (auto& method : methods)
+        {
+            if (getConstant<ConstantUtf8>(method.nameIndex)->value == name,
+                getConstant<ConstantUtf8>(method.descriptorIndex)->value == descriptor)
+            {
+                return &method;    
+            }
+        }
+        return nullptr;
+    }
+
+    const CodeAttribute* getCode(const MethodInfo& method)
+    {
+        for (auto& attribute : method.attributes)
+        {
+            if (auto* code = dynamic_cast<const CodeAttribute*>(attribute.get()))
+            {
+                return code;    
+            }
+        }
+        return nullptr;
     }
 
 private:
