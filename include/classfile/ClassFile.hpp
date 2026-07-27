@@ -87,7 +87,7 @@ public:
     {
         for (auto& method : methods)
         {
-            if (getConstant<ConstantUtf8>(method.nameIndex)->value == name,
+            if (getConstant<ConstantUtf8>(method.nameIndex)->value == name &&
                 getConstant<ConstantUtf8>(method.descriptorIndex)->value == descriptor)
             {
                 return &method;    

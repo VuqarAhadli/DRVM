@@ -10,7 +10,7 @@
 /**
  * Union
  */
-using Value = std::variant<S4, void*>;  // int32 or reference; expand with F4/S8/F8 as needed
+using Value = std::variant<S4, S8, F4, F8, void*>;  // int32 or reference; expand with F4/S8/F8 as needed
 
 /**
  * One method invocation's execution context: operand stack + local variable array, 
@@ -54,6 +54,9 @@ enum class Opcode : U1
     IConst3        = 0x06,
     IConst4        = 0x07,
     IConst5        = 0x08,
+    Ldc            = 0x12, 
+    LdcW           = 0x13,  
+    Ldc2W          = 0x14,  
     BiPush         = 0x10,
     SiPush         = 0x11,
     ILoad          = 0x15,
@@ -68,6 +71,9 @@ enum class Opcode : U1
     IStore3        = 0x3E,
     IAdd           = 0x60,
     ISub           = 0x64,
+    NewArray       = 0xBC,  
+    ANewArray      = 0xBD,  
+    ArrayLength    = 0xBE,
     Goto           = 0xA7,
     IReturn        = 0xAC,
     Return         = 0xB1,
@@ -78,7 +84,19 @@ enum class Opcode : U1
     InvokeVirtual  = 0xB6,
     InvokeSpecial  = 0xB7,
     InvokeStatic   = 0xB8,
+    New            = 0xBB,  
 };
+
+//  Array Type 	atype
+//  T_BOOLEAN 	4
+//  T_CHAR 	    5
+//  T_FLOAT     6
+//  T_DOUBLE 	7
+//  T_BYTE 	    8
+//  T_SHORT     9
+//  T_INT 	    10
+//  T_LONG 	    11
+
 
 class VM
 {
@@ -90,6 +108,6 @@ public:
 
 private:
     Value execute(ClassFile& classFile, const CodeAttribute& code);
-
+    std::unordered_map<ClassFile*, std::unordered_map<std::string, Value>> staticFields;
     ClassLoader& loader;
 };

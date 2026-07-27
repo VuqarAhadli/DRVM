@@ -1,7 +1,7 @@
 #include "vm/VM.hpp"
 #include <stdexcept>
 #include <iostream>
-
+#include <sstream>
 VM::VM(ClassLoader& loader)
     : loader(loader)
 {
@@ -119,11 +119,117 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             case Opcode::Return:
                 return Value();
 
+            case Opcode::Ldc:
+            {
+                U1 index = bytecode[frame.programCounter];
+                frame.programCounter++;
+                CPInfo* entry = classFile.getConstant<CPInfo>(index);
+                if (entry->tag == ConstantTag::Integer)
+                {
+                    frame.push(classFile.getConstant<ConstantInteger>(index)->value);
+                }
+                else if (entry->tag == ConstantTag::Float)
+                {
+                    frame.push(classFile.getConstant<ConstantFloat>(index)->value);
+                }
+                else if (entry->tag == ConstantTag::String)
+                {
+                    // heap not yet implemented
+                    throw std::runtime_error("ldc: String constants not yet supported");
+                }
+                else
+                {
+                    throw std::runtime_error("ldc: unexpected constant pool tag");
+                }
+                break;
+            }
+
+            case Opcode::LdcW:
+            {
+                U2 index = static_cast<U2>((bytecode[frame.programCounter] << 8) | bytecode[frame.programCounter + 1]);
+                frame.programCounter += 2;
+
+                CPInfo* entry = classFile.getConstant<CPInfo>(index);
+                if (entry->tag == ConstantTag::Integer)
+                {
+                    frame.push(classFile.getConstant<ConstantInteger>(index)->value);
+                }
+                else if (entry->tag == ConstantTag::Float)
+                {
+                    frame.push(classFile.getConstant<ConstantFloat>(index)->value);
+                }
+                else
+                {
+                    throw std::runtime_error("ldc_w: unexpected/unsupported constant pool tag");
+                }
+                break;
+            }
+
+            case Opcode::Ldc2W:
+            {
+                U2 index = static_cast<U2>((bytecode[frame.programCounter] << 8) | bytecode[frame.programCounter + 1]);
+                frame.programCounter += 2;
+
+                CPInfo* entry = classFile.getConstant<CPInfo>(index);
+                if (entry->tag == ConstantTag::Long)
+                {
+                    frame.push(classFile.getConstant<ConstantLong>(index)->value);
+                }
+                else if (entry->tag == ConstantTag::Double)
+                {
+                    frame.push(classFile.getConstant<ConstantDouble>(index)->value);
+                }
+                else
+                {
+                    throw std::runtime_error("ldc_2w: unexpected/unsupported constant pool tag");
+                }
+                break;
+            }
+
+            case Opcode::GetStatic:
+            {
+                U2 index = static_cast<U2>((bytecode[frame.programCounter] << 8) | bytecode[frame.programCounter + 1]);
+                frame.programCounter += 2;
+
+                auto* fieldref = classFile.getConstant<ConstantFieldref>(index);
+                auto* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
+                std::string fieldName = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex)->value;
+
+                // Assumes the field belongs to the current class (classFile).
+                // If it names a different class (e.g. inherited static fields) — not handled yet.
+                auto& fields = staticFields[&classFile];
+                auto iter = fields.find(fieldName);
+                if (iter == fields.end())
+                {
+                    // Field never explicitly initialized yet — JVM default is 0 for numerics.
+                    fields[fieldName] = S4(0);
+                    iter = fields.find(fieldName);
+                }
+                frame.push(iter->second);
+                break;
+            }
+
+            case Opcode::PutStatic:
+            {
+                U2 index = static_cast<U2>((bytecode[frame.programCounter] << 8) | bytecode[frame.programCounter + 1]);
+                frame.programCounter += 2;
+
+                auto* fieldref = classFile.getConstant<ConstantFieldref>(index);
+                auto* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
+                std::string fieldName = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex)->value;
+
+                staticFields[&classFile][fieldName] = frame.pop();
+                break;
+            }
+
             default:
-                throw std::runtime_error(
-                    "Unimplemented opcode: 0x" + std::to_string(static_cast<S4>(opcode))
-                    + " at programCounter=" + std::to_string(frame.programCounter - 1)
-                );
+            {
+                std::ostringstream oss;
+                oss << "Unimplemented opcode: 0x" << std::hex << std::uppercase
+                    << static_cast<int>(opcode)
+                    << " at programCounter=" << std::dec << (frame.programCounter - 1);
+                throw std::runtime_error(oss.str());
+            }
         }
     }
 
