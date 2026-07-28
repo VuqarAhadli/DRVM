@@ -8,9 +8,15 @@
 #include "vm/ClassLoader.hpp"
 
 /**
- * Union
+ *        Union
+ *     |  |  |  |  
+ *     v  v  v  v  
  */
-using Value = std::variant<S4, S8, F4, F8, void*>;  // int32 or reference; expand with F4/S8/F8 as needed
+using Value = std::variant<S4, S8, F4, F8, void*>;  
+/**
+ * I will change the union's structure in the future when I will implement heap types.
+ * For now this structure is enough for debugging.
+ */
 
 /**
  * One method invocation's execution context: operand stack + local variable array, 
@@ -47,6 +53,7 @@ struct Frame
 enum class Opcode : U1
 {
     Nop            = 0x00,
+    AConstNull     = 0x01,
     IConstM1       = 0x02,
     IConst0        = 0x03,
     IConst1        = 0x04,
@@ -87,6 +94,12 @@ enum class Opcode : U1
     New            = 0xBB,  
 };
 
+
+/*
+    For NewArray 0xBC (188) but I need to implement heap first
+    |  |  |  |  
+    v  v  v  v  
+*/
 //  Array Type 	atype
 //  T_BOOLEAN 	4
 //  T_CHAR 	    5

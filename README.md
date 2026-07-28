@@ -1,4 +1,4 @@
-<img align="right" src="extracted/splash" width="250" alt="Diamond Rush Splash">
+<img align="right" src="extracted/splash" width="200" alt="Diamond Rush Splash">
 
 # Diamond Rush Emulator
 

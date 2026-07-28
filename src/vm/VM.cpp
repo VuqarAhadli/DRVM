@@ -32,6 +32,10 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             case Opcode::Nop:
                 break;
 
+            case Opcode::AConstNull:
+                frame.push(nullptr);
+                break;
+
             case Opcode::IConstM1:
                 frame.push(S4(-1));
                 break;
