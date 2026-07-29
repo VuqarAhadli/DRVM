@@ -58,7 +58,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                 std::cout << pad + "  "
                           << std::left << std::setw(6)
                           << ("#" + std::to_string(index++))
-                          << (implemented ? ANSI_BG_GREEN : ANSI_BG_RED)
+                          << (implemented ? ANSI_BG_GREEN  : ANSI_BG_RED)
                           << "0x"
                           << std::hex
                           << std::setw(2)
@@ -67,6 +67,9 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << ANSI_RESET
                           << std::dec
                           << std::setfill(' ')
+                          << (implemented ? ANSI_FG_GREEN  : ANSI_FG_RED)
+                          << ' ' +  toString(static_cast<Opcode>(opcode))
+                          << ANSI_RESET
                           << '\n';
             }
             std::cout << '\n';

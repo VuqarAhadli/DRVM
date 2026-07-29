@@ -2,7 +2,7 @@
 
 #include "Common.hpp"
 #include "Types.hpp"
-
+#include <string>
 
 
 
@@ -55,5 +55,5 @@ enum class Opcode : U1
 };
 
 bool isImplemented(Opcode opcode);
-
+std::string toString(Opcode opcode);
 
