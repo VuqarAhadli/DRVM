@@ -742,11 +742,13 @@ void ClassFile::dumpConstantPoolTags()
 
 void ClassFile::dump()
 {
-    std::cout << "Magic:               \x1b[32m0x"
+    std::cout << "Magic:"
+	      << ANSI_FG_GREEN
+	      << "               0x"
               << std::hex
               << std::uppercase
               << magic
-              << "\x1b[0m"
+	      << ANSI_RESET
               << '\n'
               << "Minor Version:       "
               << std::dec
