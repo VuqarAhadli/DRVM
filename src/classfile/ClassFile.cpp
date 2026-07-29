@@ -1,10 +1,10 @@
 #include "classfile/ClassFile.hpp"
 #include "classfile/BinaryReader.hpp"
+#include "opcode.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
-
 
 inline ConstantTag readConstantTag(U1 value)
 {
@@ -41,16 +41,41 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     std::string pad(indent, ' ');
     std::string name = getConstant<ConstantUtf8>(attribute->attributeNameIndex) -> value;
 
-    if (auto* code = dynamic_cast<const CodeAttribute*>(attribute))
+    if (auto* codeObj = dynamic_cast<const CodeAttribute*>(attribute))
     {
-        std::cout << pad << "Code: max_stack=" << code->maxStack
-                   << " max_locals=" << code->maxLocals
-                   << " code_length=" << code->codeLength << "\n";
+        std::cout << pad << "Code: max_stack=" << codeObj->maxStack
+                   << " max_locals=" << codeObj->maxLocals
+                   << " code_length=" << codeObj->codeLength << "\n\n";
 
-        if (!code->exceptionTable.empty())
+        if (!codeObj->code.empty())
+        {
+            U4 index = 1;
+            std::cout << pad + "Opcodes:\n";
+            for (auto& opcode : codeObj->code)
+            {
+                bool implemented = isImplemented(static_cast<Opcode>(opcode));
+                
+                std::cout << pad + "  "
+                          << std::left << std::setw(6)
+                          << ("#" + std::to_string(index++))
+                          << (implemented ? ANSI_BG_GREEN : ANSI_BG_RED)
+                          << "0x"
+                          << std::hex
+                          << std::setw(2)
+                          << std::setfill('0')
+                          << static_cast<int>(opcode)
+                          << ANSI_RESET
+                          << std::dec
+                          << std::setfill(' ')
+                          << '\n';
+            }
+            std::cout << '\n';
+        }
+        
+        if (!codeObj->exceptionTable.empty())
         {
             std::cout << pad << "  Exception Table:\n";
-            for (auto& e : code->exceptionTable)
+            for (auto& e : codeObj->exceptionTable)
             {
                 std::cout << pad << "    start_pc=" << e.startPc
                            << " end_pc=" << e.endPc
@@ -59,7 +84,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
             }
         }
 
-        for (auto& nested : code->attributes)
+        for (auto& nested : codeObj->attributes)
         {
             dumpAttribute(nested.get(), indent + 2);
         }
@@ -518,218 +543,252 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::Utf8:
                 {
                     auto* utf8 = getConstant<ConstantUtf8>(i);
-                    std::cout << "#" << i
-                            << " Utf8: "
-                            << UTF8_COLOUR
-                            << utf8 -> value
-                            << ANSI_RESET
-                            << "\n";
+                    std::cout << std::left
+                              << std::setw(5)
+                              << ("#" + std::to_string(i))
+                              << " Utf8: "
+                              << UTF8_COLOUR
+                              << utf8 -> value
+                              << ANSI_RESET
+                              << "\n";
                 }
                 break;
             case ConstantTag::Integer:
                 {
                     auto* integer = getConstant<ConstantInteger>(i);
-                    std::cout << "#" << i
-                            << " Integer: "
-                            << INT_COLOUR
-                            << integer -> value
-                            << ANSI_RESET
-                            << "\n";
+                    std::cout << std::left
+                              << std::setw(5)
+                              << ("#" + std::to_string(i))
+                              << " Integer: "
+                              << INT_COLOUR
+                              << integer -> value
+                              << ANSI_RESET
+                              << "\n";
                 }
                 break;
             case ConstantTag::Float:
-            {
-                auto* f = getConstant<ConstantFloat>(i);
-                std::cout << "#" << i
-                        << " Float: "
-                        << FLOAT_COLOUR
-                        << f->value
-                        << ANSI_RESET
-                        << "\n";
-                break;
-            }
+                {
+                    auto* f = getConstant<ConstantFloat>(i);
+                    std::cout << std::left
+                              << std::setw(5)
+                              << ("#" + std::to_string(i))
+                              << " Float: "
+                              << FLOAT_COLOUR
+                              << f->value
+                              << ANSI_RESET
+                              << "\n";
+                    break;
+                }
             case ConstantTag::Long:
             {
                 auto* l = getConstant<ConstantLong>(i);
-                std::cout << "#" << i
-                        << " Long: "
-                        << LONG_COLOUR
-                        << l->value
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Long: "
+                          << LONG_COLOUR
+                          << l->value
+                          << ANSI_RESET
+                          << "\n";
                 ++i;  /* Long/Double take two constant pool entries */
                 break;
             }
             case ConstantTag::Double:
             {
                 auto* d = getConstant<ConstantDouble>(i);
-                std::cout << "#" << i
-                        << " Double: "
-                        << DOUBLE_COLOUR
-                        << d->value
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Double: "
+                          << DOUBLE_COLOUR
+                          << d->value
+                          << ANSI_RESET
+                          << "\n";
                 ++i;  /* Long/Double take two constant pool entries */
                 break;
             }
             case ConstantTag::Class:
             {
                 auto* c = getConstant<ConstantClass>(i);
-                std::cout << "#" << i
-                        << " Class: name_index="
-                        << CLASS_COLOUR
-                        << c->nameIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Class: name_index="
+                          << CLASS_COLOUR
+                          << c->nameIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::String:
             {
                 auto* s = getConstant<ConstantString>(i);
-                std::cout << "#" << i
-                        << " String: string_index="
-                        << STRING_COLOUR
-                        << s->stringIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " String: string_index="
+                          << STRING_COLOUR
+                          << s->stringIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::Fieldref:
             {
                 auto* f = getConstant<ConstantFieldref>(i);
-                std::cout << "#" << i
-                        << " Fieldref: class_index="
-                        << FIELDREF_COLOUR
-                        << f->classIndex
-                        << ANSI_RESET
-                        << " name_and_type_index="
-                        << FIELDREF_COLOUR
-                        << f->nameAndTypeIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Fieldref: class_index="
+                          << FIELDREF_COLOUR
+                          << f->classIndex
+                          << ANSI_RESET
+                          << " name_and_type_index="
+                          << FIELDREF_COLOUR
+                          << f->nameAndTypeIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::Methodref:
             {
                 auto* m = getConstant<ConstantMethodref>(i);
-                std::cout << "#" << i
-                        << " Methodref: class_index="
-                        << METHODREF_COLOUR
-                        << m->classIndex
-                        << ANSI_RESET
-                        << " name_and_type_index="
-                        << METHODREF_COLOUR
-                        << m->nameAndTypeIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Methodref: class_index="
+                          << METHODREF_COLOUR
+                          << m->classIndex
+                          << ANSI_RESET
+                          << " name_and_type_index="
+                          << METHODREF_COLOUR
+                          << m->nameAndTypeIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::InterfaceMethodref:
             {
                 auto* m = getConstant<ConstantInterfaceMethodref>(i);
-                std::cout << "#" << i
-                        << " InterfaceMethodref: class_index="
-                        << IFACE_MR_COLOUR
-                        << m->classIndex
-                        << ANSI_RESET
-                        << " name_and_type_index="
-                        << IFACE_MR_COLOUR
-                        << m->nameAndTypeIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " InterfaceMethodref: class_index="
+                          << IFACE_MR_COLOUR
+                          << m->classIndex
+                          << ANSI_RESET
+                          << " name_and_type_index="
+                          << IFACE_MR_COLOUR
+                          << m->nameAndTypeIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::NameAndType:
             {
                 auto* nt = getConstant<ConstantNameAndType>(i);
-                std::cout << "#" << i
-                        << " NameAndType: name_index="
-                        << NAT_COLOUR
-                        << nt->nameIndex
-                        << ANSI_RESET
-                        << " descriptor_index="
-                        << NAT_COLOUR
-                        << nt->descriptorIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " NameAndType: name_index="
+                          << NAT_COLOUR
+                          << nt->nameIndex
+                          << ANSI_RESET
+                          << " descriptor_index="
+                          << NAT_COLOUR
+                          << nt->descriptorIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::MethodHandle:
             {
                 auto* mh = getConstant<ConstantMethodHandle>(i);
-                std::cout << "#" << i
-                        << " MethodHandle: reference_kind="
-                        << MHANDLE_COLOUR
-                        << static_cast<int>(mh->referenceKind)
-                        << ANSI_RESET
-                        << " reference_index="
-                        << MHANDLE_COLOUR
-                        << mh->referenceIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " MethodHandle: reference_kind="
+                          << MHANDLE_COLOUR
+                          << static_cast<int>(mh->referenceKind)
+                          << ANSI_RESET
+                          << " reference_index="
+                          << MHANDLE_COLOUR
+                          << mh->referenceIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::MethodType:
             {
                 auto* mt = getConstant<ConstantMethodType>(i);
-                std::cout << "#" << i
-                        << " MethodType: descriptor_index="
-                        << MTYPE_COLOUR
-                        << mt->descriptorIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " MethodType: descriptor_index="
+                          << MTYPE_COLOUR
+                          << mt->descriptorIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::Dynamic:
             {
                 auto* dyn = getConstant<ConstantDynamic>(i);
-                std::cout << "#" << i
-                        << " Dynamic: bootstrap_method_attr_index="
-                        << DYNAMIC_COLOUR
-                        << dyn->bootstrapMethodAttrIndex
-                        << ANSI_RESET
-                        << " name_and_type_index="
-                        << DYNAMIC_COLOUR
-                        << dyn->nameAndTypeIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Dynamic: bootstrap_method_attr_index="
+                          << DYNAMIC_COLOUR
+                          << dyn->bootstrapMethodAttrIndex
+                          << ANSI_RESET
+                          << " name_and_type_index="
+                          << DYNAMIC_COLOUR
+                          << dyn->nameAndTypeIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::InvokeDynamic:
             {
                 auto* inv = getConstant<ConstantInvokeDynamic>(i);
-                std::cout << "#" << i
-                        << " InvokeDynamic: bootstrap_method_attr_index="
-                        << INVOKEDYN_COLOUR
-                        << inv->bootstrapMethodAttrIndex
-                        << ANSI_RESET
-                        << " name_and_type_index="
-                        << INVOKEDYN_COLOUR
-                        << inv->nameAndTypeIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " InvokeDynamic: bootstrap_method_attr_index="
+                          << INVOKEDYN_COLOUR
+                          << inv->bootstrapMethodAttrIndex
+                          << ANSI_RESET
+                          << " name_and_type_index="
+                          << INVOKEDYN_COLOUR
+                          << inv->nameAndTypeIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::Module:
             {
                 auto* mod = getConstant<ConstantModule>(i);
-                std::cout << "#" << i
-                        << " Module: name_index="
-                        << MODULE_COLOUR
-                        << mod->nameIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Module: name_index="
+                          << MODULE_COLOUR
+                          << mod->nameIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             case ConstantTag::Package:
             {
                 auto* pkg = getConstant<ConstantPackage>(i);
-                std::cout << "#" << i
-                        << " Package: name_index="
-                        << PACKAGE_COLOUR
-                        << pkg->nameIndex
-                        << ANSI_RESET
-                        << "\n";
+                std::cout << std::left
+                          << std::setw(5)
+                          << ("#" + std::to_string(i))
+                          << " Package: name_index="
+                          << PACKAGE_COLOUR
+                          << pkg->nameIndex
+                          << ANSI_RESET
+                          << "\n";
                 break;
             }
             default:
