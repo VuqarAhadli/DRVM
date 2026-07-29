@@ -56,7 +56,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                 bool implemented = isImplemented(static_cast<Opcode>(opcode));
                 
                 std::cout << pad + "  "
-                          << std::left << std::setw(6)
+                          << std::left << std::setw(7)
                           << ("#" + std::to_string(index++))
                           << (implemented ? ANSI_BG_GREEN  : ANSI_BG_RED)
                           << "0x"
