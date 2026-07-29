@@ -177,6 +177,6 @@ std::string toString(Opcode opcode)
         return "New";
 
         default:
-        return "Unknown";
+        return "Not implemented/Unknown";
     }
 }
