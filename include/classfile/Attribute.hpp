@@ -139,5 +139,70 @@ public:
     }
 };
 
+class SourceFileAttribute : public AttributeInfo
+{
+public:
+    U2 sourceFileIndex;
+
+    SourceFileAttribute(U2 nameIndex, U4 length, U2 sourceFileIndex)
+        : AttributeInfo(nameIndex, length),
+          sourceFileIndex(sourceFileIndex)
+    {}
+};
+
+struct LineNumberTableEntry
+{
+    U2 startPc;
+    U2 lineNumber;
+};
+
+class LineNumberTableAttribute : public AttributeInfo
+{
+public:
+    std::vector<LineNumberTableEntry> lineNumberTable;
+
+    LineNumberTableAttribute(U2 nameIndex, U4 length, 
+        std::vector<LineNumberTableEntry> lineNumberTable)
+        : AttributeInfo(nameIndex, length),
+          lineNumberTable(std::move(lineNumberTable))
+    {
+    }
+};
+
+enum class VerificationTypeTag : U1
+{
+    Top = 0,
+    Integer = 1,
+    Float = 2,
+    Double = 3,
+    Long = 4,
+    Null = 5,
+    UninitializedThis = 6,
+    Object = 7, 
+    Uninitialized = 8, 
+};
+
+struct VerificationTypeInfo
+{
+    VerificationTypeTag tag;
+    U2 extra; 
+};
+
+struct StackMapFrame
+{
+    U2 offset; 
+    std::vector<VerificationTypeInfo> locals;
+    std::vector<VerificationTypeInfo> stack;
+};
 
 
+class StackMapAttribute : public AttributeInfo
+{
+public:
+    std::vector<StackMapFrame> entries;
+
+    StackMapAttribute(U2 nameIndex, U4 length, std::vector<StackMapFrame> entries)
+        : AttributeInfo(nameIndex, length),
+          entries(std::move(entries))
+    {}
+};

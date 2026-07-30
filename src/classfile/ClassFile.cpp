@@ -1,11 +1,48 @@
 #include "classfile/ClassFile.hpp"
 #include "classfile/BinaryReader.hpp"
+#include "classfile/Attribute.hpp"
 #include "opcode.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <stdexcept>
 
+std::string to_string(VerificationTypeTag tag)
+{
+    switch (tag)
+    {
+        case VerificationTypeTag::Top:
+            return std::string(ANSI_FG_BRIGHT_BLACK) + "Top" + ANSI_RESET;
+
+        case VerificationTypeTag::Integer:
+            return std::string(INT_COLOUR) + "Integer" + ANSI_RESET;
+
+        case VerificationTypeTag::Float:
+            return std::string(FLOAT_COLOUR) + "Float" + ANSI_RESET;
+
+        case VerificationTypeTag::Double:
+            return std::string(DOUBLE_COLOUR) + "Double" + ANSI_RESET;
+
+        case VerificationTypeTag::Long:
+            return std::string(LONG_COLOUR) + "Long" + ANSI_RESET;
+
+        case VerificationTypeTag::Null:
+            return std::string(ANSI_FG_BRIGHT_BLACK) + "Null" + ANSI_RESET;
+
+        case VerificationTypeTag::UninitializedThis:
+            return std::string(ANSI_FG_YELLOW) + "UninitializedThis" + ANSI_RESET;
+
+        case VerificationTypeTag::Object:
+            return std::string(CLASS_COLOUR) + "Object" + ANSI_RESET;
+
+        case VerificationTypeTag::Uninitialized:
+            return std::string(ANSI_FG_YELLOW) + "Uninitialized" + ANSI_RESET;
+
+        default:
+            return std::string(ANSI_FG_RED) + "Unknown/Invalid("
+                + std::to_string(static_cast<int>(tag)) + ")" + ANSI_RESET;
+    }
+}
 inline ConstantTag readConstantTag(U1 value)
 {
     return static_cast<ConstantTag>(value);
@@ -104,6 +141,59 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
             std::cout << "#" << index << " ";
         }
         std::cout << "\n";
+    }
+    else if (auto* sf = dynamic_cast<const SourceFileAttribute*>(attribute))
+    {
+        std::cout << pad << "SourceFile: source_file_index=" << sf->sourceFileIndex << "\n";
+    }
+    else if (auto* lnt = dynamic_cast<const LineNumberTableAttribute*>(attribute))
+    {
+        std::cout << pad << "LineNumberTable: line_number_table:" << "\n";
+        U4 index = 1;
+        for (auto& entry : lnt->lineNumberTable)
+        {
+            std::cout << std::left 
+                      << std::setw(4) 
+                      << ("  #" + std::to_string(index++) + ':') 
+                      << "start_pc: "
+                      << entry.startPc
+                      << " line_number: "
+                      << entry.lineNumber
+                      << "\n";
+        }
+    }
+    else if (auto* sm = dynamic_cast<const StackMapAttribute*>(attribute))
+    {
+        std::cout << pad << "StackMap: number_of_entries=" << sm->entries.size() << "\n";
+        U4 index = 1;
+        for (auto& frame : sm->entries)
+        {
+            std::cout << pad << "  #" << index++ << ": offset=" << frame.offset << "\n";
+
+            std::cout << pad << "    locals (" << frame.locals.size() << "): ";
+            for (auto& v : frame.locals)
+            {
+                std::cout << to_string(v.tag);
+                if (v.tag == VerificationTypeTag::Object)
+                    std::cout << "(cp#" << v.extra << ")";
+                else if (v.tag == VerificationTypeTag::Uninitialized)
+                    std::cout << "(offset=" << v.extra << ")";
+                std::cout << " ";
+            }
+            std::cout << "\n";
+
+            std::cout << pad << "    stack (" << frame.stack.size() << "): ";
+            for (auto& v : frame.stack)
+            {
+                std::cout << to_string(v.tag);
+                if (v.tag == VerificationTypeTag::Object)
+                    std::cout << "(cp#" << v.extra << ")";
+                else if (v.tag == VerificationTypeTag::Uninitialized)
+                    std::cout << "(offset=" << v.extra << ")";
+                std::cout << " ";
+            }
+            std::cout << "\n";
+        }
     }
     else
     {
@@ -217,6 +307,68 @@ std::unique_ptr<AttributeInfo> ClassFile::readAttribute()
              std::move(exceptionIndexTable)
          );
     }
+
+    if (name == "SourceFile")
+    {
+        U2 sourceFileIndex = reader.readU2();
+        return std::make_unique<SourceFileAttribute>(
+            nameIndex, length, sourceFileIndex
+        );
+    }
+
+    if (name == "LineNumberTable")
+    {
+        U2 lineNumberTableLength = reader.readU2();
+        std::vector<LineNumberTableEntry> lineNumberTable(lineNumberTableLength);
+
+        for (auto& entry : lineNumberTable)
+        {
+            entry.startPc = reader.readU2();
+            entry.lineNumber = reader.readU2();
+        }
+
+        return std::make_unique<LineNumberTableAttribute>(
+            nameIndex, length, std::move(lineNumberTable)
+        );
+    }
+
+    if (name == "StackMap")
+    {
+        U2 numberOfEntries = reader.readU2();
+        std::vector<StackMapFrame> entries(numberOfEntries);
+
+        for (auto& frame : entries)
+        {
+            frame.offset = reader.readU2();
+
+            U2 numberOfLocals = reader.readU2();
+            frame.locals.resize(numberOfLocals);
+
+            for (auto& local : frame.locals)
+            {
+                local.tag = static_cast<VerificationTypeTag>(reader.readU1());
+                local.extra = (local.tag == VerificationTypeTag::Object ||
+                     local.tag == VerificationTypeTag::Uninitialized ?
+                     reader.readU2() : 0);
+            }   
+
+            U2 numberOfStack = reader.readU2();
+            frame.stack.resize(numberOfStack);
+
+            for (auto& stack : frame.stack)
+            {
+                stack.tag = static_cast<VerificationTypeTag>(reader.readU1());
+                stack.extra = (stack.tag == VerificationTypeTag::Object ||
+                     stack.tag == VerificationTypeTag::Uninitialized ?
+                     reader.readU2() : 0);
+            }
+        }
+
+        return std::make_unique<StackMapAttribute>(
+            nameIndex, length, std::move(entries)
+        );
+    }
+
     std::vector<U1> raw = reader.readBytes(length);
     return std::make_unique<GenericAttribute>(nameIndex, length, std::move(raw));
 }
