@@ -75,7 +75,14 @@ public:
     template<typename T>
     T* getConstant(U2 index)
     {
-        return static_cast<T*>(constantPool.at(index).get());
+        auto* entry = constantPool.at(index).get();
+        T* result = dynamic_cast<T*>(entry);
+        if (!result)
+        {
+            throw std::runtime_error("Constant pool entry #" + std::to_string(index) +
+                                    " is not of an expected type");
+        }
+        return result;
     }
 
     std::string getClassName()

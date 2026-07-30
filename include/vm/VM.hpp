@@ -6,6 +6,7 @@
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
+#include "heap/heap.hpp"
 #include "opcode.hpp"
 
 /**
@@ -13,7 +14,11 @@
  *     |  |  |  |  
  *     v  v  v  v  
  */
-using Value = std::variant<S4, S8, F4, F8, void*>;  
+using Value = std::variant<S4,
+                           S8,
+                           F4,
+                           F8,
+                           HeapObject*>;  
 /**
  * I will change the union's structure in the future when I will implement heap types.
  * For now this structure is enough for debugging.
@@ -42,7 +47,11 @@ struct Frame
 
     Value pop()
     {
-        Value v = operandStack.back();
+        if (operandStack.empty())
+        {
+            throw std::runtime_error("Operand stack underflow");
+        }
+        Value v = std::move(operandStack.back());
         operandStack.pop_back();
         return v;
     }
@@ -51,10 +60,11 @@ struct Frame
 
 
 /*
-    For NewArray 0xBC (188) but I need to implement heap first
+    For NewArray 0xBC (188) 
     |  |  |  |  
     v  v  v  v  
 */
+/* From JVM specs §6.5 */
 //  Array Type 	atype
 //  T_BOOLEAN 	4
 //  T_CHAR 	    5
@@ -65,6 +75,17 @@ struct Frame
 //  T_INT 	    10
 //  T_LONG 	    11
 
+enum class ArrayType : U1
+{
+    T_BOOLEAN = 4,
+    T_CHAR = 5,
+    T_FLOAT = 6,
+    T_DOUBLE = 7,
+    T_BYTE = 8,
+    T_SHORT = 9,
+    T_INT = 10,
+    T_LONG = 11
+};
 
 class VM
 {

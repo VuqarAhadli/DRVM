@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 using U1 = std::uint8_t;
 using U2 = std::uint16_t;
@@ -14,3 +15,5 @@ using S8 = std::int64_t;
 
 using F4 = float;
 using F8 = double;
+
+using UTF16 = std::u16string;
