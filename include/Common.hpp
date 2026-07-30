@@ -1,7 +1,10 @@
 #pragma once
 
 #include <Types.hpp>
-
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <stdexcept>
 /* SPDX-License-Identifier: Unlicense */
 /* Public-domain ANSI/ECMA-48 Select Graphic Rendition string literals. */
 
@@ -142,3 +145,49 @@ enum AccessFlag : U2
     ACC_ENUM         = 0x4000,
     ACC_MODULE       = 0x8000  // classes only
 };
+
+inline UTF16 utf8ToUtf16(const std::string& utf8)
+{
+    UTF16 utf16;
+    U4 i = 0;
+    U4 n = static_cast<U4>(utf8.size());
+
+    while (i < n)
+    {
+        U1 c = static_cast<U1>(utf8[i]);
+
+        if (c < 0x80) // regular ASCII character
+        {
+            utf16.push_back(static_cast<UTF16Char>(c));
+            i += 1;
+        }
+        else if ((c & 0xE0) == 0xC0) // 2-byte sequence
+        {
+            if (i + 1 >= n)
+                throw std::runtime_error("Truncated 2-byte UTF-8 sequence");
+
+            UTF16Char ch = static_cast<UTF16Char>(
+                ((c & 0x1F) << 6) | (static_cast<U1>(utf8[i + 1]) & 0x3F));
+            utf16.push_back(ch);
+            i += 2;
+        }
+        else if ((c & 0xF0) == 0xE0) // 3-byte sequence
+        {
+            if (i + 2 >= n)
+                throw std::runtime_error("Truncated 3-byte UTF-8 sequence");
+
+            UTF16Char ch = static_cast<UTF16Char>(
+                ((c & 0x0F) << 12) |
+                ((static_cast<U1>(utf8[i + 1]) & 0x3F) << 6) |
+                (static_cast<U1>(utf8[i + 2]) & 0x3F));
+            utf16.push_back(ch);
+            i += 3;
+        }
+        else
+        {
+            throw std::runtime_error("Invalid UTF-8 sequence");
+        }
+    }
+
+    return utf16;
+}

@@ -17,3 +17,8 @@ using F4 = float;
 using F8 = double;
 
 using UTF16 = std::u16string;
+using UTF32 = std::u32string;
+
+using UTF16Char = char16_t;
+using UTF32Char = char32_t;
+
