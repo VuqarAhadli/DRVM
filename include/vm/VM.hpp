@@ -3,6 +3,8 @@
 #include <vector>
 #include <variant>
 #include <string>
+#include <unordered_map>
+#include <stdexcept>
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
@@ -19,11 +21,8 @@ using Value = std::variant<S4,
                            F4,
                            F8,
                            HeapObject*>;  
-/**
- * I will change the union's structure in the future when I will implement heap types.
- * For now this structure is enough for debugging.
- */
 
+                           
 /**
  * One method invocation's execution context: operand stack + local variable array, 
  * sized per the method's Code attribute.
@@ -78,13 +77,13 @@ struct Frame
 enum class ArrayType : U1
 {
     T_BOOLEAN = 4,
-    T_CHAR = 5,
-    T_FLOAT = 6,
-    T_DOUBLE = 7,
-    T_BYTE = 8,
-    T_SHORT = 9,
-    T_INT = 10,
-    T_LONG = 11
+    T_CHAR    = 5,
+    T_FLOAT   = 6,
+    T_DOUBLE  = 7,
+    T_BYTE    = 8,
+    T_SHORT   = 9,
+    T_INT     = 10,
+    T_LONG    = 11
 };
 
 class VM
