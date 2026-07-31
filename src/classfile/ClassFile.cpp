@@ -80,7 +80,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
 
     if (auto* codeObj = dynamic_cast<const CodeAttribute*>(attribute))
     {
-        std::cout << pad << "Code: max_stack=" << codeObj->maxStack
+        std::cout << CODE_ATTRIBUTE_COLOUR << pad << "Code" << ANSI_RESET << ": max_stack=" << codeObj->maxStack
                    << " max_locals=" << codeObj->maxLocals
                    << " code_length=" << codeObj->codeLength << "\n\n";
 
@@ -98,10 +98,12 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << (implemented ? ANSI_BG_GREEN  : ANSI_BG_RED)
                           << "0x"
                           << std::hex
+                          << std::uppercase
                           << std::setw(2)
                           << std::setfill('0')
                           << static_cast<int>(opcode)
                           << ANSI_RESET
+                          << std::nouppercase
                           << std::dec
                           << std::setfill(' ')
                           << (implemented ? ANSI_FG_GREEN  : ANSI_FG_RED)
@@ -131,11 +133,11 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else if (auto* cv = dynamic_cast<const ConstantValueAttribute*>(attribute))
     {
-        std::cout << pad << "ConstantValue: constant_value_index=" << cv->constantValueIndex << "\n";
+        std::cout << CONSTVAL_ATTRIBUTE_COLOUR << pad << "ConstantValue" << ANSI_RESET << ": constant_value_index=" << cv->constantValueIndex << "\n";
     }
     else if (auto* ex = dynamic_cast<const ExceptionsAttribute*>(attribute))
     {
-        std::cout << pad << "Exceptions: ";
+        std::cout << EXCEPTIONS_ATTRIBUTE_COLOUR << pad << "Exceptions" << ANSI_RESET << ": ";
         for (U2 index : ex->exceptionIndexTable)
         {
             std::cout << "#" << index << " ";
@@ -144,11 +146,11 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else if (auto* sf = dynamic_cast<const SourceFileAttribute*>(attribute))
     {
-        std::cout << pad << "SourceFile: source_file_index=" << sf->sourceFileIndex << "\n";
+        std::cout << SOURCE_FILE_ATTRIBUTE_COLOUR << pad << "SourceFile" << ANSI_RESET << ": source_file_index=" << sf->sourceFileIndex << "\n";
     }
     else if (auto* lnt = dynamic_cast<const LineNumberTableAttribute*>(attribute))
     {
-        std::cout << pad << "LineNumberTable: line_number_table:" << "\n";
+        std::cout << LINE_NUMBER_ATTRIBUTE_COLOUR << pad << "LineNumberTable" << ANSI_RESET << ": line_number_table:" << "\n";
         U4 index = 1;
         for (auto& entry : lnt->lineNumberTable)
         {
@@ -164,7 +166,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else if (auto* sm = dynamic_cast<const StackMapAttribute*>(attribute))
     {
-        std::cout << pad << "StackMap: number_of_entries=" << sm->entries.size() << "\n";
+        std::cout << STACKMAP_ATTRIBUTE_COLOUR << pad << "StackMap" << ANSI_RESET << ": number_of_entries=" << sm->entries.size() << "\n";
         U4 index = 1;
         for (auto& frame : sm->entries)
         {
@@ -197,7 +199,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else
     {
-        std::cout << pad << name << " (Generic/Unknown attr. " << attribute->attributeLength << " bytes)\n";
+        std::cout << GENERIC_ATTRIBUTE_COLOUR << pad << name << ANSI_RESET << " (Generic/Unknown attr. " << attribute->attributeLength << " bytes)\n";
     }
 }
 
