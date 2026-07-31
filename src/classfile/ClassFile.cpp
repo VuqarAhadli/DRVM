@@ -177,9 +177,19 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
             {
                 std::cout << to_string(v.tag);
                 if (v.tag == VerificationTypeTag::Object)
+                {
                     std::cout << "(cp#" << v.extra << ")";
+                    auto* cls = getConstant<ConstantClass>(v.extra);
+                    if(cls)
+                    {
+                        auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
+                        std::cout <<  " (" << ANSI_BOLD << CLASS_COLOUR << name->value  << ANSI_RESET << ") ";
+                    }
+                }
                 else if (v.tag == VerificationTypeTag::Uninitialized)
+                {
                     std::cout << "(offset=" << v.extra << ")";
+                }
                 std::cout << " ";
             }
             std::cout << "\n";
@@ -189,9 +199,19 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
             {
                 std::cout << to_string(v.tag);
                 if (v.tag == VerificationTypeTag::Object)
+                {
                     std::cout << "(cp#" << v.extra << ")";
+                    auto* cls = getConstant<ConstantClass>(v.extra);
+                    if(cls)
+                    {
+                        auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
+                        std::cout <<  " (" << ANSI_BOLD << CLASS_COLOUR << name->value << ANSI_RESET << ") ";
+                    }
+                }
                 else if (v.tag == VerificationTypeTag::Uninitialized)
+                {
                     std::cout << "(offset=" << v.extra << ")";
+                }
                 std::cout << " ";
             }
             std::cout << "\n";
