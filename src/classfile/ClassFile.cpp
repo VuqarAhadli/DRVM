@@ -183,7 +183,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                     if(cls)
                     {
                         auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
-                        std::cout <<  " (" << ANSI_BOLD << CLASS_COLOUR << name->value  << ANSI_RESET << ") ";
+                        std::cout <<  " -> (" << ANSI_BOLD << CLASS_COLOUR << name->value  << ANSI_RESET << ") ";
                     }
                 }
                 else if (v.tag == VerificationTypeTag::Uninitialized)
@@ -205,7 +205,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                     if(cls)
                     {
                         auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
-                        std::cout <<  " (" << ANSI_BOLD << CLASS_COLOUR << name->value << ANSI_RESET << ") ";
+                        std::cout <<  " -> (" << ANSI_BOLD << CLASS_COLOUR << name->value << ANSI_RESET << ") ";
                     }
                 }
                 else if (v.tag == VerificationTypeTag::Uninitialized)
