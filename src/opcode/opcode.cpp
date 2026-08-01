@@ -180,3 +180,34 @@ std::string toString(Opcode opcode)
         return "Not implemented/Unknown";
     }
 }
+
+U1 operandSize(Opcode opcode)
+{
+    switch (opcode)
+    {
+        case Opcode::BiPush:
+        case Opcode::Ldc:
+        case Opcode::NewArray:
+        case Opcode::ILoad:
+        case Opcode::IStore:
+            return 1;
+
+        case Opcode::SiPush:
+        case Opcode::LdcW:
+        case Opcode::Ldc2W:
+        case Opcode::ANewArray:
+        case Opcode::New:
+        case Opcode::Goto:
+        case Opcode::GetStatic:
+        case Opcode::PutStatic:
+        case Opcode::GetField:
+        case Opcode::PutField:
+        case Opcode::InvokeVirtual:
+        case Opcode::InvokeSpecial:
+        case Opcode::InvokeStatic:
+            return 2;
+
+        default:
+            return 0;
+    }
+}

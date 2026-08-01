@@ -54,6 +54,7 @@ enum class Opcode : U1
     New            = 0xBB,  
 };
 
+U1 operandSize(Opcode opcode);
 bool isImplemented(Opcode opcode);
 std::string toString(Opcode opcode);
 

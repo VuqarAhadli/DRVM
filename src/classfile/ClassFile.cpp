@@ -88,9 +88,16 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
         {
             U4 index = 1;
             std::cout << pad + "Opcodes:\n";
-            for (auto& opcode : codeObj->code)
+
+            U8 pc = 0;
+            const auto& code = codeObj->code;
+
+            while (pc < code.size())
             {
-                bool implemented = isImplemented(static_cast<Opcode>(opcode));
+                Opcode op = static_cast<Opcode>(code[pc]);
+
+                bool implemented = isImplemented(op);
+                U1 opSize = operandSize(op);
                 
                 std::cout << pad + "  "
                           << std::left << std::setw(7)
@@ -101,15 +108,27 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << std::uppercase
                           << std::setw(2)
                           << std::setfill('0')
-                          << static_cast<int>(opcode)
+                          << static_cast<int>(code[pc])
                           << ANSI_RESET
                           << std::nouppercase
                           << std::dec
                           << std::setfill(' ')
                           << (implemented ? ANSI_FG_GREEN  : ANSI_FG_RED)
-                          << ' ' +  toString(static_cast<Opcode>(opcode))
-                          << ANSI_RESET
-                          << '\n';
+                          << ' ' +  toString(op)
+                          << ANSI_RESET;
+
+                if (opSize > 0 && pc + opSize < code.size())
+                {
+                    U4 operandVal = 0;
+                    for (size_t i = 1; i <= opSize; ++i)
+                        operandVal = (operandVal << 8) | code[pc + i];
+
+                    std::cout << "  operand=" << operandVal
+                            << " (0x" << std::hex << std::uppercase
+                            << operandVal << std::dec << std::nouppercase << ")";
+                }
+                std::cout << '\n';
+                pc += 1 + opSize;
             }
             std::cout << '\n';
         }
