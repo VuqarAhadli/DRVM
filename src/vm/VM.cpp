@@ -2,6 +2,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
+#include <variant>
 
 // enum class Opcode : U1
 // {
@@ -53,10 +54,22 @@ VM::VM(ClassLoader& loader)
 }
 
 HeapObject* VM::allocateString(const std::string& utf8)
+{
+   if (heap.size() >= gcThreshold)
     {
-        heap.push_back(std::make_unique<StringHeapObject>(utf8ToUtf16(utf8)));
-        return heap.back().get();
+        collectGarbage();
     }
+        
+
+    heap.push_back(std::make_unique<StringHeapObject>(utf8ToUtf16(utf8)));
+
+    if (heap.size() >= gcThreshold)
+    {
+        gcThreshold = heap.size() * 2; 
+    }
+        
+    return heap.back().get();
+}
 
 Value VM::invoke(ClassFile& classFile, const MethodInfo& method)
 {
@@ -71,6 +84,7 @@ Value VM::invoke(ClassFile& classFile, const MethodInfo& method)
 Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 {
     Frame frame(code.maxLocals, code.maxStack);
+    FrameGuard guard(*this, frame);
     const std::vector<U1>& bytecode = code.code;
 
     while (frame.programCounter < bytecode.size())
@@ -290,4 +304,79 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
     }
 
     throw std::runtime_error("Fell off end of method without return");
+}
+
+std::vector<HeapObject*> VM::gatherRoots()
+{
+    std::vector<HeapObject*> roots;
+    for (auto& [cls, fields] : staticFields)
+    {
+        for (auto& [name, val] : fields)
+        {
+            if (auto* ref = std::get_if<HeapObject*>(&val); ref && *ref)
+            {
+                roots.push_back(*ref);
+            }
+        }
+    }
+
+    for (Frame* frame : callStack)
+        {
+            for (auto& v : frame->locals)
+            {
+                if (auto* ref = std::get_if<HeapObject*>(&v); ref && *ref)
+                {
+                    roots.push_back(*ref);
+                }
+            }
+
+            for (auto& v : frame->operandStack)
+            {
+                if (auto* ref = std::get_if<HeapObject*>(&v); ref && *ref)
+                {
+                    roots.push_back(*ref);
+                }
+            }
+        }
+
+    return roots;
+}
+
+void VM::collectGarbage()
+{
+    std::vector<HeapObject*> roots = gatherRoots();
+    for (auto* obj : roots)
+    {
+        obj->marked = true;
+    } 
+
+    while (!roots.empty())
+    {
+        HeapObject* obj = roots.back();
+        roots.pop_back();
+
+        std::vector<HeapObject*> children;
+        obj->trace(children);
+        for (auto* child : children)
+        {
+            if (child && !child->marked)
+            {
+                child->marked = true;
+                roots.push_back(child);
+            }
+        }
+    }
+
+    heap.erase(std::remove_if(
+            heap.begin(), heap.end(), 
+            [](const std::unique_ptr<HeapObject>& obj) 
+            { 
+                return !obj->marked;
+            }),
+        heap.end());
+
+    for (auto& obj : heap)
+    {
+        obj->marked = false;
+    }
 }

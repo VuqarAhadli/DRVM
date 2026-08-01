@@ -99,8 +99,10 @@ public:
 
 private:
     friend struct FrameGuard;
+    U4 gcThreshold = 1024;
     
     Value execute(ClassFile& classFile, const CodeAttribute& code);
+    std::vector<HeapObject*> gatherRoots();
     std::unordered_map<ClassFile*, std::unordered_map<std::string, Value>> staticFields;
     ClassLoader& loader;
     std::vector<std::unique_ptr<HeapObject>> heap;
