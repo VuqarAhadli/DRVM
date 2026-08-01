@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <stdexcept>
+#include <algorithm>
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
