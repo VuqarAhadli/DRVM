@@ -95,12 +95,28 @@ public:
     Value invoke(ClassFile& classFile, const MethodInfo& method);
     HeapObject* allocateString(const std::string& utf8);
     
+    void collectGarbage();
 
 private:
+    friend struct FrameGuard;
+    
     Value execute(ClassFile& classFile, const CodeAttribute& code);
     std::unordered_map<ClassFile*, std::unordered_map<std::string, Value>> staticFields;
     ClassLoader& loader;
     std::vector<std::unique_ptr<HeapObject>> heap;
+    std::vector<Frame*> callStack;
     
 };
 
+struct FrameGuard
+{
+    VM& vm;
+    FrameGuard(VM& vm, Frame& frame) : vm(vm) 
+    { 
+        vm.callStack.push_back(&frame); 
+    }
+    ~FrameGuard()
+    {
+        vm.callStack.pop_back();
+    }
+};

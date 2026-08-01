@@ -18,6 +18,8 @@ class HeapObject
 {
 public:
     HeapType type;
+    bool marked = false; // for GC
+    HeapObject* allocatedNext = nullptr;
 
     explicit HeapObject(HeapType type)
         : type(type)
@@ -25,6 +27,7 @@ public:
     }
 
     virtual ~HeapObject() = default;
+    virtual void trace(std::vector<HeapObject*>& out) const = 0;
 };
 
 class StringHeapObject : public HeapObject
@@ -37,6 +40,7 @@ public:
         : HeapObject(HeapType::String),
           value(std::move(value))
     {}
+    void trace(std::vector<HeapObject*>&) const override {}
 };
 
 enum class ValueType : U1
@@ -70,6 +74,20 @@ public:
           elementType(elementType),
           length(length)
     {}
+
+    void trace(std::vector<HeapObject*>& out) const override
+    {
+        if (elementType == ValueType::Reference)
+        {
+            for (auto* ref : referenceData)
+            {
+                if (ref)
+                {
+                    out.push_back(ref);
+                } 
+            }
+        }
+    }
 };
 
 
@@ -93,5 +111,16 @@ public:
         : HeapObject(HeapType::Object),
           classIndex(classIndex)
     {
+    }
+
+    void trace(std::vector<HeapObject*>& out) const override
+    {
+        for (auto& [name, slot] : fields)
+        {
+            if (slot.type == ValueType::Reference && slot.reference != nullptr)
+            {
+                out.push_back(slot.reference);
+            }
+        }
     }
 };
