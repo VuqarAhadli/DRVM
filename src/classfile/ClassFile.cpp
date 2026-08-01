@@ -120,12 +120,14 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                 if (opSize > 0 && pc + opSize < code.size())
                 {
                     U4 operandVal = 0;
-                    for (size_t i = 1; i <= opSize; ++i)
+                    for (U1 i = 1; i <= opSize; ++i)
                         operandVal = (operandVal << 8) | code[pc + i];
 
                     std::cout << "  operand=" << operandVal
-                            << " (0x" << std::hex << std::uppercase
-                            << operandVal << std::dec << std::nouppercase << ")";
+                              << " (0x" << std::hex << std::uppercase
+                              << operandVal
+                              << std::dec << std::nouppercase 
+                              << ")";
                 }
                 std::cout << '\n';
                 pc += 1 + opSize;
