@@ -235,7 +235,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                 }
                 std::cout << " ";
             }
-            std::cout << "\n";
+            std::cout << "\n\n";
         }
     }
     else
