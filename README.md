@@ -7,3 +7,8 @@ A custom Java Virtual Machine (JVM) implementation for reverse engineering the i
 ## Future Plans
 
 Once the VM is fully functional on Linux and macOS (hopefully), I plan to port it and its graphics backend to a variety of popular microcontroller platforms, such as the ESP32 and RP2040/RP2350.
+
+<br>
+<img align="left" src="drvm_photos/Methods.png" width="450" alt="Diamond Rush Splash">
+<img align="right" src="drvm_photos/Constantpool.png" width="450" alt="Diamond Rush Splash">
+
