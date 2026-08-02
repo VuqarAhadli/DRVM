@@ -10,7 +10,7 @@
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
 #include "heap/heap.hpp"
-#include "opcode.hpp"
+#include "Opcode.hpp"
 
 /**
  *        Union

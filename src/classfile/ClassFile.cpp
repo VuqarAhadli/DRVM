@@ -1,7 +1,7 @@
 #include "classfile/ClassFile.hpp"
 #include "classfile/BinaryReader.hpp"
 #include "classfile/Attribute.hpp"
-#include "opcode.hpp"
+#include "Opcode.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
