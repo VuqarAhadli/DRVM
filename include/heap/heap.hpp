@@ -103,13 +103,13 @@ struct FieldSlot
 class ObjectHeapObject : public HeapObject
 {
 public:
-    U2 classIndex; 
+    ClassFile* javaClass;
 
     std::unordered_map<std::string, FieldSlot> fields;
 
-    explicit ObjectHeapObject(U2 classIndex)
+    explicit ObjectHeapObject(ClassFile* javaClass)
         : HeapObject(HeapType::Object),
-          classIndex(classIndex)
+          javaClass(javaClass)
     {
     }
 

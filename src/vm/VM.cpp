@@ -122,6 +122,8 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             case Opcode::IConst5: 
                 frame.push(S4(5));
                 break;
+            
+            
 
             case Opcode::BiPush:
             {
