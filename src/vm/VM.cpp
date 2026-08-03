@@ -123,7 +123,29 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(S4(5));
                 break;
             
-            
+            case Opcode::LConst0:
+                frame.push(S8(0));
+                break;
+            case Opcode::LConst1:
+                frame.push(S8(1));
+                break;                
+
+            case Opcode::FConst0:
+                frame.push(F4(0.0f));
+                break;
+            case Opcode::FConst1:
+                frame.push(F4(1.0f));
+                break;                
+            case Opcode::FConst2:
+                frame.push(F4(2.0f));
+                break;
+
+            case Opcode::DConst0:
+                frame.push(F8(0.0f));
+                break;
+            case Opcode::DConst1:
+                frame.push(F8(1.0f));
+                break;
 
             case Opcode::BiPush:
             {
