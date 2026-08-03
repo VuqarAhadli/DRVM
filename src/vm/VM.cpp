@@ -121,55 +121,6 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
-            case Opcode::ILoad0:
-                frame.push(frame.locals[0]); 
-                break;
-
-            case Opcode::ILoad1:
-                frame.push(frame.locals[1]);
-                break;
-            case Opcode::ILoad2:
-                frame.push(frame.locals[2]);
-                break;
-            case Opcode::ILoad3:
-                frame.push(frame.locals[3]);
-                break;
-
-            case Opcode::IStore0:
-                frame.locals[0] = frame.pop();
-                break;
-            case Opcode::IStore1:
-                frame.locals[1] = frame.pop();
-                break;
-            case Opcode::IStore2:
-                frame.locals[2] = frame.pop(); 
-                break;
-            case Opcode::IStore3:
-                frame.locals[3] = frame.pop();
-                break;
-
-            case Opcode::IAdd:
-            {
-                S4 b = std::get<S4>(frame.pop());
-                S4 a = std::get<S4>(frame.pop());
-                frame.push(S4(a + b));
-                break;
-            }
-
-            case Opcode::ISub:
-            {
-                S4 b = std::get<S4>(frame.pop());
-                S4 a = std::get<S4>(frame.pop());
-                frame.push(S4(a - b));
-                break;
-            }
-
-            case Opcode::IReturn:
-                return frame.pop();
-
-            case Opcode::Return:
-                return Value();
-
             case Opcode::Ldc:
             {
                 U1 index = bytecode[frame.programCounter];
@@ -238,6 +189,76 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 }
                 break;
             }
+
+            case Opcode::ILoad:
+                U1 index = bytecode[frame.programCounter];
+                frame.programCounter++;
+                auto* intConst = classFile.getConstant<ConstantInteger>(index);
+                if (intConst)
+                {
+                    frame.push(intConst->value);
+                }
+                break;
+            case Opcode::LLoad:
+                U1 index = bytecode[frame.programCounter];
+                frame.programCounter++;
+                auto* longConst = classFile.getConstant<ConstantLong>(index);
+                if (longConst)
+                {
+                    frame.push(longConst->value);
+                }
+                break;
+
+            case Opcode::ILoad0:
+                frame.push(frame.locals[0]); 
+                break;
+
+            case Opcode::ILoad1:
+                frame.push(frame.locals[1]);
+                break;
+            case Opcode::ILoad2:
+                frame.push(frame.locals[2]);
+                break;
+            case Opcode::ILoad3:
+                frame.push(frame.locals[3]);
+                break;
+
+            case Opcode::IStore0:
+                frame.locals[0] = frame.pop();
+                break;
+            case Opcode::IStore1:
+                frame.locals[1] = frame.pop();
+                break;
+            case Opcode::IStore2:
+                frame.locals[2] = frame.pop(); 
+                break;
+            case Opcode::IStore3:
+                frame.locals[3] = frame.pop();
+                break;
+
+            case Opcode::IAdd:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+                frame.push(S4(a + b));
+                break;
+            }
+
+            case Opcode::ISub:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+                frame.push(S4(a - b));
+                break;
+            }
+
+            case Opcode::IReturn:
+                return frame.pop();
+
+            case Opcode::Return:
+                return Value();
+
+            
 
             case Opcode::GetStatic:
             {
