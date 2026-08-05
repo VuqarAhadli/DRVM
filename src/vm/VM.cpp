@@ -273,6 +273,66 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(value);
                 break;
             }
+            case Opcode::LALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
+
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: laload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("laload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Long)
+                {
+                    throw std::runtime_error("laload: array element type is not long");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                S8 value;
+                std::memcpy(&value, &arrayObj->primitiveData[static_cast<size_t>(index) * sizeof(S8)], sizeof(S8));
+                frame.push(value);
+                break;
+            }
+            case Opcode::FALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
+
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: laload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("faload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Float)
+                {
+                    throw std::runtime_error("faload: array element type is not long");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                F4 value;
+                std::memcpy(&value, &arrayObj->primitiveData[static_cast<size_t>(index) * sizeof(F4)], sizeof(F4));
+                frame.push(value);
+                break;
+            }
 
             case Opcode::IStore0:
                 frame.locals[0] = frame.pop();
