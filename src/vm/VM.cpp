@@ -191,37 +191,88 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             }
 
             case Opcode::ILoad:
-                U1 index = bytecode[frame.programCounter];
-                frame.programCounter++;
-                auto* intConst = classFile.getConstant<ConstantInteger>(index);
-                if (intConst)
-                {
-                    frame.push(intConst->value);
-                }
-                break;
             case Opcode::LLoad:
+            case Opcode::FLoad:
+            case Opcode::DLoad:
+            case Opcode::ALoad:
+            {
                 U1 index = bytecode[frame.programCounter];
                 frame.programCounter++;
-                auto* longConst = classFile.getConstant<ConstantLong>(index);
-                if (longConst)
-                {
-                    frame.push(longConst->value);
-                }
+                frame.push(frame.locals[index]);
                 break;
+            }
 
             case Opcode::ILoad0:
+            case Opcode::LLoad0:
+            case Opcode::FLoad0:
+            case Opcode::DLoad0:
+            case Opcode::ALoad0:
+            {
                 frame.push(frame.locals[0]); 
                 break;
+            }
 
             case Opcode::ILoad1:
+            case Opcode::LLoad1:
+            case Opcode::FLoad1:
+            case Opcode::DLoad1:
+            case Opcode::ALoad1:
+            {
                 frame.push(frame.locals[1]);
                 break;
+            }
+
             case Opcode::ILoad2:
+            case Opcode::LLoad2:
+            case Opcode::FLoad2:
+            case Opcode::DLoad2:
+            case Opcode::ALoad2:
+            {
                 frame.push(frame.locals[2]);
                 break;
+            }
+
             case Opcode::ILoad3:
+            case Opcode::LLoad3:
+            case Opcode::FLoad3:
+            case Opcode::DLoad3:
+            case Opcode::ALoad3:
+            {
                 frame.push(frame.locals[3]);
                 break;
+            }
+
+
+            case Opcode::IALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
+
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: iaload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("iaload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Int)
+                {
+                    throw std::runtime_error("iaload: array element type is not int");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                S4 value;
+                std::memcpy(&value, &arrayObj->primitiveData[static_cast<size_t>(index) * sizeof(S4)], sizeof(S4));
+                frame.push(value);
+                break;
+            }
 
             case Opcode::IStore0:
                 frame.locals[0] = frame.pop();
