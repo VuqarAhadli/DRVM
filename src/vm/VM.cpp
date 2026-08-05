@@ -311,7 +311,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
                 if (!ref || !*ref)
                 {
-                    throw std::runtime_error("NullPointerException: laload on null array reference");
+                    throw std::runtime_error("NullPointerException: faload on null array reference");
                 }
                 if ((*ref)->type != HeapType::Array)
                 {
@@ -333,6 +333,67 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(value);
                 break;
             }
+            case Opcode::DALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
+
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: daload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("daload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Double)
+                {
+                    throw std::runtime_error("daload: array element type is not long");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                F8 value;
+                std::memcpy(&value, &arrayObj->primitiveData[static_cast<size_t>(index) * sizeof(F8)], sizeof(F8));
+                frame.push(value);
+                break;
+            }
+            case Opcode::AALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
+
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: aaload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("aaload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Reference)
+                {
+                    throw std::runtime_error("aaload: array element is not of a reference type");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                HeapObject* value = arrayObj->referenceData[static_cast<size_t>(index)];
+                frame.push(value);
+                break;
+            }
+
+
 
             case Opcode::IStore0:
                 frame.locals[0] = frame.pop();
