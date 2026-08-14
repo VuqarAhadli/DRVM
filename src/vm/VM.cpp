@@ -422,6 +422,66 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(value);
                 break;
             }
+            case Opcode::CALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
+
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: caload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("caload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Char)
+                {
+                    throw std::runtime_error("caload: array element type is not char");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                U2 value;
+                std::memcpy(&value, &arrayObj->primitiveData[static_cast<size_t>(index) * sizeof(U2)], sizeof(U2));
+                frame.push(static_cast<S4>(value));
+                break;
+            }
+            case Opcode::SALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
+
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: saload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("saload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Short)
+                {
+                    throw std::runtime_error("saload: array element type is not short");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                S2 value;
+                std::memcpy(&value, &arrayObj->primitiveData[static_cast<size_t>(index) * sizeof(S2)], sizeof(S2));
+                frame.push(static_cast<S4>(value));
+                break;
+            }
             
 
 
