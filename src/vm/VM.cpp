@@ -321,7 +321,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
                 if (arrayObj->elementType != ValueType::Float)
                 {
-                    throw std::runtime_error("faload: array element type is not long");
+                    throw std::runtime_error("faload: array element type is not float");
                 }
                 if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
                 {
@@ -351,7 +351,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
                 if (arrayObj->elementType != ValueType::Double)
                 {
-                    throw std::runtime_error("daload: array element type is not long");
+                    throw std::runtime_error("daload: array element type is not double");
                 }
                 if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
                 {
@@ -392,7 +392,37 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(value);
                 break;
             }
+            case Opcode::BALoad:
+            {
+                S4 index = std::get<S4>(frame.pop());
+                Value arrayReferenceValue = frame.pop();
 
+                auto* ref = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if (!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: baload on null array reference");
+                }
+                if ((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("baload: reference is not an array");
+                }
+
+                auto* arrayObj = static_cast<ArrayHeapObject*>(*ref);
+                if (arrayObj->elementType != ValueType::Byte && arrayObj->elementType != ValueType::Boolean)
+                {
+                    throw std::runtime_error("baload: array element type is not byte/boolean");
+                }
+                if (index < 0 || static_cast<U4>(index) >= arrayObj->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                U1 value;
+                std::memcpy(&value, &arrayObj->primitiveData[static_cast<size_t>(index) * sizeof(U1)], sizeof(U1));
+                frame.push(value);
+                break;
+            }
+            
 
 
             case Opcode::IStore0:
@@ -441,7 +471,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 auto* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
                 std::string fieldName = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex)->value;
 
-                // Assumes the field belongs to the current class (classFile).
+                // Assumes the field belongs to the current class (classFile). yet...
                 auto& fields = staticFields[&classFile];
                 auto iter = fields.find(fieldName);
                 if (iter == fields.end())
