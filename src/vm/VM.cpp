@@ -484,19 +484,107 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             }
             
 
+            case Opcode::IStore:
+            case Opcode::LStore:
+            case Opcode::FStore:
+            case Opcode::DStore:
+            {
+                U1 index = bytecode[frame.programCounter];
+                frame.programCounter++;
+                frame.locals[index] = frame.pop();
+                break;
+
+            }
+            case Opcode::AStore:
+            {
+                U1 index = bytecode[frame.programCounter];
+                frame.programCounter++;
+                Value value = frame.pop();
+                HeapObject** objectRef = std::get_if<HeapObject*>(&value);
+                if(!objectRef)
+                {
+                    throw std::runtime_error("astore: value on stack is not a reference type");
+                }
+                if (index >= frame.locals.size())
+                {
+                    throw std::runtime_error("astore: local variable index out of bounds");
+                }
+                
+                frame.locals[index] = *objectRef;
+
+                break;
+            }
+
 
             case Opcode::IStore0:
+            case Opcode::LStore0:
+            case Opcode::FStore0:
+            case Opcode::DStore0:
                 frame.locals[0] = frame.pop();
                 break;
             case Opcode::IStore1:
+            case Opcode::LStore1:
+            case Opcode::FStore1:
+            case Opcode::DStore1:
                 frame.locals[1] = frame.pop();
                 break;
             case Opcode::IStore2:
+            case Opcode::LStore2:
+            case Opcode::FStore2:
+            case Opcode::DStore2:
                 frame.locals[2] = frame.pop(); 
                 break;
             case Opcode::IStore3:
+            case Opcode::LStore3:
+            case Opcode::FStore3:
+            case Opcode::DStore3:
                 frame.locals[3] = frame.pop();
                 break;
+
+            case Opcode::AStore0:
+            {
+                Value value = frame.pop();
+                HeapObject** objectRef = std::get_if<HeapObject*>(&value);
+                if (!objectRef)
+                {
+                    throw std::runtime_error("astore0: value on stack is not a reference type");
+                }
+                frame.locals[0] = *objectRef;
+                break;
+            }
+            case Opcode::AStore1:
+            {
+                Value value = frame.pop();
+                HeapObject** objectRef = std::get_if<HeapObject*>(&value);
+                if (!objectRef)
+                {
+                    throw std::runtime_error("astore1: value on stack is not a reference type");
+                }
+                frame.locals[1] = *objectRef;
+                break;
+            }
+            case Opcode::AStore2:
+            {
+                Value value = frame.pop();
+                HeapObject** objectRef = std::get_if<HeapObject*>(&value);
+                if (!objectRef)
+                {
+                    throw std::runtime_error("astore2: value on stack is not a reference type");
+                }
+                frame.locals[2] = *objectRef;
+                break;
+            }
+            case Opcode::AStore3:
+            {
+                Value value = frame.pop();
+                HeapObject** objectRef = std::get_if<HeapObject*>(&value);
+                if (!objectRef)
+                {
+                    throw std::runtime_error("astore3: value on stack is not a reference type");
+                }
+                frame.locals[3] = *objectRef;
+                break;
+            }
 
             case Opcode::IAdd:
             {
