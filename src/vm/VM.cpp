@@ -587,6 +587,37 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::IAStore:
+            {
+                S4 value = std::get<S4>(frame.pop());
+                S4 index = std::get<S4>(frame.pop());
+
+                Value arrayReferenceValue = frame.pop();
+
+                HeapObject** arrayRef = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if(!arrayRef || !(*arrayRef))
+                {
+                    throw std::runtime_error("NullPointerException: iastore on null array refernce");
+                }
+                if((*arrayRef)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("iastore: reference is not an array");
+                }
+
+                ArrayHeapObject* arrayObject = static_cast<ArrayHeapObject*>(*arrayRef);
+                if(arrayObject->elementType != ValueType::Int)
+                {
+                    throw std::runtime_error("iastore: array element type is not int");
+                }
+                if(index < 0 || static_cast<U4>(index) >= arrayObject->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(S4)], &value, sizeof(S4));
+                break;
+            }
+
             case Opcode::IAdd:
             {
                 S4 b = std::get<S4>(frame.pop());
