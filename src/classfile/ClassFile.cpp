@@ -1047,6 +1047,12 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::InvokeDynamic:
             {
                 auto* inv = getConstant<ConstantInvokeDynamic>(i);
+                auto* nt = getConstant<ConstantNameAndType>(inv->nameAndTypeIndex);
+                auto* nameUTF8 = getConstant<ConstantUtf8>(nt->nameIndex);
+                auto* descriptorUTF8 = getConstant<ConstantUtf8>(nt->descriptorIndex);
+                std::string name = nameUTF8->value;
+                std::string descriptor = descriptorUTF8->value;
+                
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -1058,12 +1064,21 @@ void ClassFile::dumpConstantPoolTags()
                           << INVOKEDYN_COLOUR
                           << inv->nameAndTypeIndex
                           << ANSI_RESET
+                          << "->"
+                          << DYNAMIC_COLOUR
+                          << name
+                          << ":"
+                          << descriptor
+                          << ANSI_RESET
                           << "\n";
                 break;
             }
             case ConstantTag::Module:
             {
                 auto* mod = getConstant<ConstantModule>(i);
+                auto* nameUTF8 = getConstant<ConstantUtf8>(mod->nameIndex);
+                std::string name = nameUTF8->value;
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -1071,18 +1086,29 @@ void ClassFile::dumpConstantPoolTags()
                           << MODULE_COLOUR
                           << mod->nameIndex
                           << ANSI_RESET
+                          << "->"
+                          << MODULE_COLOUR
+                          << name
+                          << ANSI_RESET
                           << "\n";
                 break;
             }
             case ConstantTag::Package:
             {
                 auto* pkg = getConstant<ConstantPackage>(i);
+                auto* nameUTF8 = getConstant<ConstantUtf8>(pkg->nameIndex);
+                std::string name = nameUTF8->value;
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
                           << " Package: name_index="
                           << PACKAGE_COLOUR
                           << pkg->nameIndex
+                          << ANSI_RESET
+                          << "->"
+                          << PACKAGE_COLOUR
+                          << name
                           << ANSI_RESET
                           << "\n";
                 break;
