@@ -255,7 +255,18 @@ void ClassFile::dumpFields()
         std::cout << "  #" << i << " " << name->value
                    << " : " << descriptor->value
                    << " (access_flags=0x" << std::hex << fields[i].accessFlags << std::dec << ")\n";
+        std::cout << "  Access flags:";
+        if (accessFlags & ACC_PUBLIC) std::cout << " PUBLIC";
+        if (accessFlags & ACC_FINAL) std::cout << " FINAL";
+        if (accessFlags & ACC_SUPER) std::cout << " SUPER";
+        if (accessFlags & ACC_INTERFACE) std::cout << " INTERFACE";
+        if (accessFlags & ACC_ABSTRACT) std::cout << " ABSTRACT";
+        if (accessFlags & ACC_MODULE) std::cout << " MODULE";
+        if (accessFlags & ACC_SYNTHETIC) std::cout << " SYNTHETIC";
+        if (accessFlags & ACC_ANNOTATION) std::cout << " ANNOTATION";
+        if (accessFlags & ACC_ENUM) std::cout << " ENUM";
 
+        std::cout << "\n";
         for (auto& attribute : fields[i].attributes)
         {
             dumpAttribute(attribute.get(), 4);
@@ -274,7 +285,18 @@ void ClassFile::dumpMethods()
         std::cout << "  #" << i << " " << name->value
                    << " : " << descriptor->value
                    << " (access_flags=0x" << std::hex << methods[i].accessFlags << std::dec << ")\n";
+        std::cout << "  Access flags:";
+        if (accessFlags & ACC_PUBLIC) std::cout << " PUBLIC";
+        if (accessFlags & ACC_FINAL) std::cout << " FINAL";
+        if (accessFlags & ACC_SUPER) std::cout << " SUPER";
+        if (accessFlags & ACC_INTERFACE) std::cout << " INTERFACE";
+        if (accessFlags & ACC_ABSTRACT) std::cout << " ABSTRACT";
+        if (accessFlags & ACC_MODULE) std::cout << " MODULE";
+        if (accessFlags & ACC_SYNTHETIC) std::cout << " SYNTHETIC";
+        if (accessFlags & ACC_ANNOTATION) std::cout << " ANNOTATION";
+        if (accessFlags & ACC_ENUM) std::cout << " ENUM";
 
+        std::cout << "\n";
         for (auto& attribute : methods[i].attributes)
         {
             dumpAttribute(attribute.get(), 4);
