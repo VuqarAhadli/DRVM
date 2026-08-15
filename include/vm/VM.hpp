@@ -68,7 +68,7 @@ struct Frame
         {
             throw std::runtime_error("Operand stack underflow");
         }
-        Value v = std::move(operandStack.back());
+        Value v = operandStack.back();
         operandStack.pop_back();
         return v;
     }
