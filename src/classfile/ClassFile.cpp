@@ -818,7 +818,7 @@ void ClassFile::dumpConstantPoolTags()
                           << c->nameIndex
                           << std::setw(3)
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << std::setw(3)
                           << CLASS_COLOUR
                           << name
@@ -839,7 +839,7 @@ void ClassFile::dumpConstantPoolTags()
                           << s->stringIndex
                           << std::setw(3)
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << std::setw(3)
                           << STRING_COLOUR
                           << stringValue
@@ -871,7 +871,7 @@ void ClassFile::dumpConstantPoolTags()
                           << FIELDREF_COLOUR
                           << f->nameAndTypeIndex
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << FIELDREF_COLOUR
                           << className
                           << "."
@@ -903,7 +903,11 @@ void ClassFile::dumpConstantPoolTags()
                           << METHODREF_COLOUR
                           << m->classIndex
                           << ANSI_RESET
-                          << "->"
+                          << " name_and_type_index="
+                          << METHODREF_COLOUR
+                          << m->nameAndTypeIndex
+                          << ANSI_RESET
+                          << " -> "
                           << METHODREF_COLOUR
                           << className
                           << "."
@@ -938,7 +942,7 @@ void ClassFile::dumpConstantPoolTags()
                           << IFACE_MR_COLOUR
                           << m->nameAndTypeIndex
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << IFACE_MR_COLOUR
                           << className
                           << "."
@@ -968,7 +972,7 @@ void ClassFile::dumpConstantPoolTags()
                           << NAT_COLOUR
                           << nt->descriptorIndex
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << NAT_COLOUR
                           << name
                           << ":"
@@ -980,16 +984,59 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::MethodHandle:
             {
                 auto* mh = getConstant<ConstantMethodHandle>(i);
+                int kind = static_cast<int>(mh->referenceKind);
+
+                std::string className, memberName, descriptor;
+
+                if (kind >= 1 && kind <= 4)
+                {
+                    // Fieldref
+                    auto* f = getConstant<ConstantFieldref>(mh->referenceIndex);
+                    auto* cls = getConstant<ConstantClass>(f->classIndex);
+                    className = getConstant<ConstantUtf8>(cls->nameIndex)->value;
+                    auto* nt = getConstant<ConstantNameAndType>(f->nameAndTypeIndex);
+                    memberName = getConstant<ConstantUtf8>(nt->nameIndex)->value;
+                    descriptor = getConstant<ConstantUtf8>(nt->descriptorIndex)->value;
+                }
+                else if (kind >= 5 && kind <= 8)
+                {
+                    // Methodref
+                    auto* m = getConstant<ConstantMethodref>(mh->referenceIndex);
+                    auto* cls = getConstant<ConstantClass>(m->classIndex);
+                    className = getConstant<ConstantUtf8>(cls->nameIndex)->value;
+                    auto* nt = getConstant<ConstantNameAndType>(m->nameAndTypeIndex);
+                    memberName = getConstant<ConstantUtf8>(nt->nameIndex)->value;
+                    descriptor = getConstant<ConstantUtf8>(nt->descriptorIndex)->value;
+                }
+                else if (kind == 9)
+                {
+                    // InterfaceMethodref
+                    auto* m = getConstant<ConstantInterfaceMethodref>(mh->referenceIndex);
+                    auto* cls = getConstant<ConstantClass>(m->classIndex);
+                    className = getConstant<ConstantUtf8>(cls->nameIndex)->value;
+                    auto* nt = getConstant<ConstantNameAndType>(m->nameAndTypeIndex);
+                    memberName = getConstant<ConstantUtf8>(nt->nameIndex)->value;
+                    descriptor = getConstant<ConstantUtf8>(nt->descriptorIndex)->value;
+                }
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
                           << " MethodHandle: reference_kind="
                           << MHANDLE_COLOUR
-                          << static_cast<int>(mh->referenceKind)
+                          << kind
                           << ANSI_RESET
                           << " reference_index="
                           << MHANDLE_COLOUR
                           << mh->referenceIndex
+                          << ANSI_RESET
+                          << " -> "
+                          << MHANDLE_COLOUR
+                          << className
+                          << "."
+                          << memberName
+                          << ":"
+                          << descriptor
                           << ANSI_RESET
                           << "\n";
                 break;
@@ -1007,7 +1054,7 @@ void ClassFile::dumpConstantPoolTags()
                           << MTYPE_COLOUR
                           << mt->descriptorIndex
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << MTYPE_COLOUR
                           << descriptor
                           << ANSI_RESET
@@ -1035,7 +1082,7 @@ void ClassFile::dumpConstantPoolTags()
                           << DYNAMIC_COLOUR
                           << dyn->nameAndTypeIndex
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << DYNAMIC_COLOUR
                           << name
                           << ":"
@@ -1064,8 +1111,8 @@ void ClassFile::dumpConstantPoolTags()
                           << INVOKEDYN_COLOUR
                           << inv->nameAndTypeIndex
                           << ANSI_RESET
-                          << "->"
-                          << DYNAMIC_COLOUR
+                          << " -> "
+                          << INVOKEDYN_COLOUR
                           << name
                           << ":"
                           << descriptor
@@ -1086,7 +1133,7 @@ void ClassFile::dumpConstantPoolTags()
                           << MODULE_COLOUR
                           << mod->nameIndex
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << MODULE_COLOUR
                           << name
                           << ANSI_RESET
@@ -1106,7 +1153,7 @@ void ClassFile::dumpConstantPoolTags()
                           << PACKAGE_COLOUR
                           << pkg->nameIndex
                           << ANSI_RESET
-                          << "->"
+                          << " -> "
                           << PACKAGE_COLOUR
                           << name
                           << ANSI_RESET
@@ -1150,3 +1197,18 @@ void ClassFile::dump()
     dumpMethods();
     dumpAttributes();
 }
+
+/**
+ *** TODO
+ *** Opcode Dump Improvements
+ * 1
+ * Resolve constant-pool operands inline 
+ * Fix branch offsets (IfNonNull, IfEq, Goto, etc.): read as S2, and convert to target pc + offset instead of raw value
+ * 2
+ * Show actual byte pc alongside instruction number, so exception table / StackMap offsets are cross-referenceable
+ * Resolve `Exceptions` attribute indices to class names (chase ConstantClass -> nameIndex -> Utf8)
+ * 3
+ * Compute and print args_size for methods
+ ***
+ ***
+ */
