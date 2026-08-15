@@ -510,7 +510,8 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     throw std::runtime_error("astore: local variable index out of bounds");
                 }
                 
-                frame.locals[index] = *objectRef;
+                
+                frame.setLocal(index, *objectRef);
 
                 break;
             }
@@ -625,7 +626,8 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 if (iter == fields.end())
                 {
                     // JVM default is 0 for numerics.
-                    fields[fieldName] = S4(0);
+
+                    fields[fieldName] = Value(std::in_place_type<S4>, 0);
                     iter = fields.find(fieldName);
                 }
                 frame.push(iter->second);
