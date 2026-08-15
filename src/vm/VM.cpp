@@ -549,7 +549,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 {
                     throw std::runtime_error("astore0: value on stack is not a reference type");
                 }
-                frame.locals[0] = *objectRef;
+                frame.setLocal(0, *objectRef);
                 break;
             }
             case Opcode::AStore1:
@@ -560,7 +560,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 {
                     throw std::runtime_error("astore1: value on stack is not a reference type");
                 }
-                frame.locals[1] = *objectRef;
+                frame.setLocal(1, *objectRef);
                 break;
             }
             case Opcode::AStore2:
@@ -571,7 +571,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 {
                     throw std::runtime_error("astore2: value on stack is not a reference type");
                 }
-                frame.locals[2] = *objectRef;
+                frame.setLocal(2, *objectRef);
                 break;
             }
             case Opcode::AStore3:
@@ -582,7 +582,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 {
                     throw std::runtime_error("astore3: value on stack is not a reference type");
                 }
-                frame.locals[3] = *objectRef;
+                frame.setLocal(3, *objectRef);
                 break;
             }
 

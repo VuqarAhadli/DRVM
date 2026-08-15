@@ -45,6 +45,23 @@ struct Frame
         operandStack.push_back(v);
     }
 
+    /**
+     *  MacOS libc++ requires explicit type conversion unlike Linux's libstdc++.
+     *  Despite, older version compiles successfully in both platforms, the language
+     *  server shows it as an error.
+     */
+    template<typename V>
+    void push(V v)
+    {
+        operandStack.push_back(Value(v));
+    }
+
+    template<typename V>
+    void setLocal(U4 index, V v)
+    {
+        locals[index] = Value(v);
+    }
+
     Value pop()
     {
         if (operandStack.empty())
