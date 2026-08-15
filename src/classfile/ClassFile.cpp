@@ -808,12 +808,20 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::Class:
             {
                 auto* c = getConstant<ConstantClass>(i);
+                auto* nameUTF8 = getConstant<ConstantUtf8>(c->nameIndex);
+                std::string name = nameUTF8->value; 
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
                           << " Class: name_index="
                           << CLASS_COLOUR
                           << c->nameIndex
+                          << std::setw(3)
+                          << ANSI_RESET
+                          << "->"
+                          << std::setw(3)
+                          << CLASS_COLOUR
+                          << name
                           << ANSI_RESET
                           << "\n";
                 break;
@@ -821,12 +829,20 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::String:
             {
                 auto* s = getConstant<ConstantString>(i);
+                auto* stringUTF8 = getConstant<ConstantUtf8>(s->stringIndex);
+                std::string stringValue = stringUTF8->value; 
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
                           << " String: string_index="
                           << STRING_COLOUR
                           << s->stringIndex
+                          << std::setw(3)
+                          << ANSI_RESET
+                          << "->"
+                          << std::setw(3)
+                          << STRING_COLOUR
+                          << stringValue
                           << ANSI_RESET
                           << "\n";
                 break;
@@ -834,6 +850,16 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::Fieldref:
             {
                 auto* f = getConstant<ConstantFieldref>(i);
+                auto* cls = getConstant<ConstantClass>(f->classIndex);
+                auto* clsNameUTF8 = getConstant<ConstantUtf8>(cls->nameIndex);
+                std::string className = clsNameUTF8->value;
+
+                auto* nt = getConstant<ConstantNameAndType>(f->nameAndTypeIndex);
+                auto* fieldNameUTF8 = getConstant<ConstantUtf8>(nt->nameIndex);
+                auto* descriptorUTF8 = getConstant<ConstantUtf8>(nt->descriptorIndex);
+                std::string fieldName = fieldNameUTF8->value;
+                std::string descriptor = descriptorUTF8->value;
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -845,12 +871,31 @@ void ClassFile::dumpConstantPoolTags()
                           << FIELDREF_COLOUR
                           << f->nameAndTypeIndex
                           << ANSI_RESET
+                          << "->"
+                          << FIELDREF_COLOUR
+                          << className
+                          << "."
+                          << fieldName
+                          << ":"
+                          << descriptor   
+                          << ANSI_RESET
                           << "\n";
                 break;
             }
             case ConstantTag::Methodref:
             {
                 auto* m = getConstant<ConstantMethodref>(i);
+                auto* cls = getConstant<ConstantClass>(m->classIndex);
+                auto* clsNameUTF8 = getConstant<ConstantUtf8>(cls->nameIndex);
+                std::string className = clsNameUTF8->value;
+
+                auto* nt = getConstant<ConstantNameAndType>(m->nameAndTypeIndex);
+                auto* methodNameUTF8 = getConstant<ConstantUtf8>(nt->nameIndex);
+                auto* descriptorUTF8 = getConstant<ConstantUtf8>(nt->descriptorIndex);
+                std::string methodName = methodNameUTF8->value;
+                std::string descriptor = descriptorUTF8->value;
+
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -858,9 +903,13 @@ void ClassFile::dumpConstantPoolTags()
                           << METHODREF_COLOUR
                           << m->classIndex
                           << ANSI_RESET
-                          << " name_and_type_index="
+                          << "->"
                           << METHODREF_COLOUR
-                          << m->nameAndTypeIndex
+                          << className
+                          << "."
+                          << methodName
+                          << ":"
+                          << descriptor
                           << ANSI_RESET
                           << "\n";
                 break;
@@ -868,6 +917,16 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::InterfaceMethodref:
             {
                 auto* m = getConstant<ConstantInterfaceMethodref>(i);
+                auto* cls = getConstant<ConstantClass>(m->classIndex);
+                auto* clsNameUTF8 = getConstant<ConstantUtf8>(cls->nameIndex);
+                std::string className = clsNameUTF8->value;
+
+                auto* nt = getConstant<ConstantNameAndType>(m->nameAndTypeIndex);
+                auto* methodNameUTF8 = getConstant<ConstantUtf8>(nt->nameIndex);
+                auto* descriptorUTF8 = getConstant<ConstantUtf8>(nt->descriptorIndex);
+                std::string methodName = methodNameUTF8->value;
+                std::string descriptor = descriptorUTF8->value;
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -879,12 +938,25 @@ void ClassFile::dumpConstantPoolTags()
                           << IFACE_MR_COLOUR
                           << m->nameAndTypeIndex
                           << ANSI_RESET
+                          << "->"
+                          << IFACE_MR_COLOUR
+                          << className
+                          << "."
+                          << methodName
+                          << ":"
+                          << descriptor
+                          << ANSI_RESET
                           << "\n";
                 break;
             }
             case ConstantTag::NameAndType:
             {
                 auto* nt = getConstant<ConstantNameAndType>(i);
+                auto* nameUTF8 = getConstant<ConstantUtf8>(nt->nameIndex);
+                auto* descriptorUTF8 = getConstant<ConstantUtf8>(nt->descriptorIndex);
+                std::string name = nameUTF8->value;
+                std::string descriptor = descriptorUTF8->value;
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -895,6 +967,12 @@ void ClassFile::dumpConstantPoolTags()
                           << " descriptor_index="
                           << NAT_COLOUR
                           << nt->descriptorIndex
+                          << ANSI_RESET
+                          << "->"
+                          << NAT_COLOUR
+                          << name
+                          << ":"
+                          << descriptor
                           << ANSI_RESET
                           << "\n";
                 break;
@@ -919,6 +997,9 @@ void ClassFile::dumpConstantPoolTags()
             case ConstantTag::MethodType:
             {
                 auto* mt = getConstant<ConstantMethodType>(i);
+                auto* descriptorUTF8 = getConstant<ConstantUtf8>(mt->descriptorIndex);
+                std::string descriptor = descriptorUTF8->value;
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -926,12 +1007,23 @@ void ClassFile::dumpConstantPoolTags()
                           << MTYPE_COLOUR
                           << mt->descriptorIndex
                           << ANSI_RESET
+                          << "->"
+                          << MTYPE_COLOUR
+                          << descriptor
+                          << ANSI_RESET
                           << "\n";
                 break;
             }
             case ConstantTag::Dynamic:
             {
                 auto* dyn = getConstant<ConstantDynamic>(i);
+                auto* nt = getConstant<ConstantNameAndType>(dyn->nameAndTypeIndex);
+                auto* nameUTF8 = getConstant<ConstantUtf8>(nt->nameIndex);
+                auto* descriptorUTF8 = getConstant<ConstantUtf8>(nt->descriptorIndex);
+                std::string name = nameUTF8->value;
+                std::string descriptor = descriptorUTF8->value;
+
+
                 std::cout << std::left
                           << std::setw(5)
                           << ("#" + std::to_string(i))
@@ -942,6 +1034,12 @@ void ClassFile::dumpConstantPoolTags()
                           << " name_and_type_index="
                           << DYNAMIC_COLOUR
                           << dyn->nameAndTypeIndex
+                          << ANSI_RESET
+                          << "->"
+                          << DYNAMIC_COLOUR
+                          << name
+                          << ":"
+                          << descriptor
                           << ANSI_RESET
                           << "\n";
                 break;
@@ -1000,12 +1098,12 @@ void ClassFile::dumpConstantPoolTags()
 void ClassFile::dump()
 {
     std::cout << "Magic:"
-	      << ANSI_FG_GREEN
-	      << "               0x"
+	          << ANSI_FG_GREEN
+	          << "               0x"
               << std::hex
               << std::uppercase
               << magic
-	      << ANSI_RESET
+	          << ANSI_RESET
               << '\n'
               << "Minor Version:       "
               << std::dec
