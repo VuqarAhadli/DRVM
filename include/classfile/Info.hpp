@@ -9,6 +9,7 @@ namespace fs = std::filesystem;
 
 struct FileInfo
 {
+    std::string fullPath;
     U8 size;
     std::string lastModified; 
 };

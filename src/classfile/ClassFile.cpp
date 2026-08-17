@@ -1196,12 +1196,12 @@ void ClassFile::dump()
 {
     FileInfo infoStruct = getFileInfo(filename);
 
-    std::cout << "File name:           "
-              << filename
+    std::cout << "File:                "
+              << infoStruct.fullPath
               << "\n"
               << "File size:           "
               << infoStruct.size 
-              << "bytes"
+              << " bytes"
               << "\n"
               << "Last modified:       "
               << infoStruct.lastModified
