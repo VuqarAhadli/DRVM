@@ -1,6 +1,8 @@
 #include "classfile/ClassFile.hpp"
 #include "classfile/BinaryReader.hpp"
 #include "classfile/Attribute.hpp"
+#include "classfile/Info.hpp"
+
 #include "Opcode.hpp"
 #include <fstream>
 #include <iomanip>
@@ -1192,6 +1194,21 @@ void ClassFile::dumpConstantPoolTags()
 
 void ClassFile::dump()
 {
+    FileInfo infoStruct = getFileInfo(filename);
+
+    std::cout << "File name:           "
+              << filename
+              << "\n"
+              << "File size:           "
+              << infoStruct.size 
+              << "bytes"
+              << "\n"
+              << "Last modified:       "
+              << infoStruct.lastModified
+              << "\n";
+              
+
+
     std::cout << "Magic:"
 	          << ANSI_FG_GREEN
 	          << "               0x"
