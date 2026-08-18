@@ -134,8 +134,30 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                 {
                     U4 operandVal = 0;
                     for (U1 i = 1; i <= opSize; ++i)
+                    {
                         operandVal = (operandVal << 8) | code[pc + i];
+                    }
+                    if (usesBranchOperand(op) && opSize == 2)
+                    {
+                        S2 signedOffset = static_cast<S2>(static_cast<U2>(operandVal));
+                        U8 target = pc + signedOffset;
 
+                        std::cout << "target=" 
+                                  << target
+                                  << " (offset=" 
+                                  << (signedOffset >= 0 ? "+" : "") 
+                                  << signedOffset 
+                                  << ")";
+                    }
+                    else if (usesConstantPoolOperand(op))
+                    {
+                        std::string resolved = describeConstant(static_cast<U2>(operandVal));
+                        std::cout << "cp=#" << operandVal;
+                        if (!resolved.empty())
+                            std::cout << " (" << resolved << ")";
+                    }
+                    else
+                    {   
                     std::cout << "operand="
                               << std::setw(5)
                               << operandVal
@@ -150,6 +172,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                               << std::nouppercase 
                               << std::setfill(' ')
                               << ")";
+                    }
                 }
                 std::cout << '\n';
                 pc += 1 + opSize;
@@ -194,9 +217,9 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << CLASS_COLOUR 
                           << name 
                           << ANSI_RESET 
-                          << ")" 
-                          << "\n";
+                          << ")";
             }
+            std::cout << "\n";
         }
         std::cout << "\n";
     }
@@ -1223,6 +1246,86 @@ void ClassFile::dumpConstantPoolTags()
                     "Unknown constant pool tag: " +
                     std::to_string(static_cast<int>(constantPool[i]->tag)));
         }
+    }
+}
+
+std::string ClassFile::describeConstant(U2 index)
+{
+    if (index == 0 || index >= constantPool.size() || !constantPool[index])
+        return "";
+
+    switch (constantPool[index]->tag)
+    {
+        case ConstantTag::Utf8:
+            return getConstant<ConstantUtf8>(index)->value;
+
+        case ConstantTag::Integer:
+            return std::to_string(getConstant<ConstantInteger>(index)->value);
+
+        case ConstantTag::Float:
+            return std::to_string(getConstant<ConstantFloat>(index)->value);
+
+        case ConstantTag::Long:
+            return std::to_string(getConstant<ConstantLong>(index)->value);
+
+        case ConstantTag::Double:
+            return std::to_string(getConstant<ConstantDouble>(index)->value);
+
+        case ConstantTag::String:
+        {
+            auto* s = getConstant<ConstantString>(index);
+            return "\"" + describeConstant(s->stringIndex) + "\"";
+        }
+
+        case ConstantTag::Class:
+        {
+            auto* c = getConstant<ConstantClass>(index);
+            return describeConstant(c->nameIndex);
+        }
+
+        case ConstantTag::Fieldref:
+        case ConstantTag::Methodref:
+        case ConstantTag::InterfaceMethodref:
+        {
+            U2 classIndex;
+            U2 ntIndex;
+            switch (constantPool[index]->tag)
+            {
+                case ConstantTag::Fieldref:
+                {
+                    auto* f = getConstant<ConstantFieldref>(index);
+                    classIndex = f->classIndex;
+                    ntIndex = f->nameAndTypeIndex;
+                    break;
+                }
+                case ConstantTag::Methodref:
+                {
+                    auto* m = getConstant<ConstantMethodref>(index);
+                    classIndex = m->classIndex;
+                    ntIndex = m->nameAndTypeIndex;
+                    break;
+                }
+                default: // InterfaceMethodref
+                {
+                    auto* im = getConstant<ConstantInterfaceMethodref>(index);
+                    classIndex = im->classIndex;
+                    ntIndex = im->nameAndTypeIndex;
+                    break;
+                }
+            }
+
+            auto* nt = getConstant<ConstantNameAndType>(ntIndex);
+            return describeConstant(classIndex) + "." + describeConstant(nt->nameIndex) + ":" + describeConstant(nt->descriptorIndex);
+        }
+
+        case ConstantTag::NameAndType:
+        {
+            auto* nt = getConstant<ConstantNameAndType>(index);
+            return describeConstant(nt->nameIndex) + ":" + describeConstant(nt->descriptorIndex);
+        }
+
+        default:
+            return "";
     }
 }
 

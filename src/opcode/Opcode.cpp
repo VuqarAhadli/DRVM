@@ -880,7 +880,7 @@ U1 operandSize(Opcode opcode)
     return 0;
 }
 
-static bool usesConstantPoolOperand(Opcode op)
+bool usesConstantPoolOperand(Opcode op)
 {
     switch (op)
     {
@@ -907,8 +907,7 @@ static bool usesConstantPoolOperand(Opcode op)
     }
 }
 
-
-static bool usesBranchOperand(Opcode op)
+bool usesBranchOperand(Opcode op)
 {
     switch (op)
     {

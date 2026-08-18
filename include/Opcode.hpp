@@ -285,3 +285,5 @@ enum class Opcode : U1
 U1 operandSize(Opcode opcode);
 bool isImplemented(Opcode opcode);
 std::string toString(Opcode opcode);
+bool usesConstantPoolOperand(Opcode op);
+bool usesBranchOperand(Opcode op);
