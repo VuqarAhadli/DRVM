@@ -139,9 +139,16 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                     std::cout << "operand="
                               << std::setw(5)
                               << operandVal
-                              << " (0x" << std::hex << std::uppercase
+                              << " (0x" 
+                              << std::hex 
+                              << std::uppercase
+                              << std::setfill('0')
+                              << std::setw(4)
+                              << std::right
                               << operandVal
-                              << std::dec << std::nouppercase 
+                              << std::dec 
+                              << std::nouppercase 
+                              << std::setfill(' ')
                               << ")";
                 }
                 std::cout << '\n';
