@@ -101,9 +101,18 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                 bool implemented = isImplemented(op);
                 U1 opSize = operandSize(op);
                 
-                std::cout << pad + "  "
-                          << std::left << std::setw(7)
+                std::cout << pad 
+                          << "  "
+                          << std::left
+                          << std::setw(7)
                           << ("#" + std::to_string(index++))
+                          << " pc="
+                          << CODE_ATTRIBUTE_COLOUR
+                          << std::left 
+                          << std::setw(5) 
+                          << pc
+                          << ANSI_RESET
+                          << ' '
                           << (implemented ? ANSI_BG_GREEN  : ANSI_BG_RED)
                           << "0x"
                           << std::hex
@@ -116,7 +125,9 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << std::dec
                           << std::setfill(' ')
                           << (implemented ? ANSI_FG_GREEN  : ANSI_FG_RED)
-                          << ' ' +  toString(op)
+                          << std::left
+                          << std::setw(16)
+                          << (' ' + toString(op))
                           << ANSI_RESET;
 
                 if (opSize > 0 && pc + opSize < code.size())
@@ -125,7 +136,9 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                     for (U1 i = 1; i <= opSize; ++i)
                         operandVal = (operandVal << 8) | code[pc + i];
 
-                    std::cout << "  operand=" << operandVal
+                    std::cout << "operand="
+                              << std::setw(5)
+                              << operandVal
                               << " (0x" << std::hex << std::uppercase
                               << operandVal
                               << std::dec << std::nouppercase 
