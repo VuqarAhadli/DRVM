@@ -210,7 +210,8 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
         U4 index = 1;
         for (auto& entry : lnt->lineNumberTable)
         {
-            std::cout << std::left 
+            std::cout << pad
+                      << std::left 
                       << std::setw(4) 
                       << ("  #" + std::to_string(index++) + ':') 
                       << "start_pc: "

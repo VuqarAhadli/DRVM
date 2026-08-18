@@ -879,3 +879,59 @@ U1 operandSize(Opcode opcode)
 
     return 0;
 }
+
+static bool usesConstantPoolOperand(Opcode op)
+{
+    switch (op)
+    {
+        case Opcode::Ldc:
+        case Opcode::LdcW:
+        case Opcode::Ldc2W:
+        case Opcode::GetStatic:
+        case Opcode::PutStatic:
+        case Opcode::GetField:
+        case Opcode::PutField:
+        case Opcode::InvokeVirtual:
+        case Opcode::InvokeSpecial:
+        case Opcode::InvokeStatic:
+        case Opcode::InvokeInterface:
+        case Opcode::InvokeDynamic:
+        case Opcode::New:
+        case Opcode::ANewArray:
+        case Opcode::CheckCast:
+        case Opcode::InstanceOf:
+        case Opcode::MultiANewArray:
+            return true;
+        default:
+            return false;
+    }
+}
+
+
+static bool usesBranchOperand(Opcode op)
+{
+    switch (op)
+    {
+        case Opcode::IfEq:
+        case Opcode::IfNe:
+        case Opcode::IfLt:
+        case Opcode::IfGe:
+        case Opcode::IfGt:
+        case Opcode::IfLe:
+        case Opcode::IfICmpEq:
+        case Opcode::IfICmpNe:
+        case Opcode::IfICmpLt:
+        case Opcode::IfICmpGe:
+        case Opcode::IfICmpGt:  
+        case Opcode::IfICmpLe:
+        case Opcode::IfACmpEq:  
+        case Opcode::IfACmpNe:
+        case Opcode::Goto:      
+        case Opcode::Jsr:
+        case Opcode::IfNull:    
+        case Opcode::IfNonNull:
+            return true;   
+        default:
+            return false;
+    }
+}
