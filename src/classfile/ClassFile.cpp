@@ -180,10 +180,23 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else if (auto* ex = dynamic_cast<const ExceptionsAttribute*>(attribute))
     {
-        std::cout << EXCEPTIONS_ATTRIBUTE_COLOUR << pad << "Exceptions" << ANSI_RESET << ": ";
+        std::cout << EXCEPTIONS_ATTRIBUTE_COLOUR << pad << "Exceptions" << ANSI_RESET << ":" << "\n";
         for (U2 index : ex->exceptionIndexTable)
         {
-            std::cout << "#" << index << " ";
+            std::cout << pad << "#" << index;
+
+            if(auto* cls = getConstant<ConstantClass>(index))
+            {
+                auto* nameUTF8 = getConstant<ConstantUtf8>(cls->nameIndex);
+                std::string name = nameUTF8->value;
+                std::cout << " -> " 
+                          << "(" 
+                          << CLASS_COLOUR 
+                          << name 
+                          << ANSI_RESET 
+                          << ")" 
+                          << "\n";
+            }
         }
         std::cout << "\n";
     }
