@@ -65,8 +65,8 @@ ClassFile::ClassFile(const std::string& filename)
     constantPoolCount = reader.readU2();
 
     constantPool.resize(constantPoolCount);
-    saveConstantPoolTags();
 
+    saveConstantPoolTags();
     saveClassMetadata();
     saveFields();
     saveMethods();
@@ -1205,11 +1205,8 @@ void ClassFile::dump()
               << "\n"
               << "Last modified:       "
               << infoStruct.lastModified
-              << "\n";
-              
-
-
-    std::cout << "Magic:"
+              << "\n"
+              << "Magic:"
 	          << ANSI_FG_GREEN
 	          << "               0x"
               << std::hex
@@ -1217,15 +1214,37 @@ void ClassFile::dump()
               << magic
 	          << ANSI_RESET
               << '\n'
-              << "Minor Version:       "
+              << "Minor version:       "
               << std::dec
               << minorVersion
               << '\n'
-              << "Major Version:       "
+              << "Major version:       "
               << majorVersion
               << '\n'
-              << "Constant Pool Count: "
+              << "Constant pool count: "
+              << CONSTANT_POOL_COLOUR
               << constantPoolCount - 1
+              << ANSI_RESET
+              << "\n"
+              << "Interface count:     "
+              << INTERFACE_COLOUR
+              << interfacesCount
+              << ANSI_RESET
+              << "\n"
+              << "Field count:         "
+              << FIELD_COLOUR
+              << fieldsCount
+              << "\n"
+              << ANSI_RESET
+              << "Method count:        "
+              << METHOD_COLOUR
+              << methodsCount
+              << ANSI_RESET
+              << "\n"
+              << "Attribute count:     "
+              << ATTRIBUTE_COLOUR
+              << attributesCount
+              << ANSI_RESET
               << '\n';      
     
     std::cout << std::dec << std::nouppercase; 

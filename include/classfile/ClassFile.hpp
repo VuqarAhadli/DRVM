@@ -135,13 +135,16 @@ private:
     U2 accessFlags;
     U2 thisClass;
     U2 superClass;
+
     U2 interfacesCount;
     std::vector<U2> interfaces;
 
     U2 fieldsCount;
     std::vector<FieldInfo> fields;
+
     U2 methodsCount;
     std::vector<MethodInfo> methods;
+    
     U2 attributesCount;
     std::vector<std::unique_ptr<AttributeInfo>> attributes; 
 
