@@ -1393,6 +1393,7 @@ void ClassFile::dump()
     std::cout << "File:                "
               << infoStruct.fullPath
               << "\n"
+#if not defined(_WIN32)
               << "File size:           "
               << infoStruct.size 
               << " bytes"
@@ -1400,6 +1401,7 @@ void ClassFile::dump()
               << "Last modified:       "
               << infoStruct.lastModified
               << "\n"
+#endif
               << "Magic:"
 	          << ANSI_FG_GREEN
 	          << "               0x"
@@ -1428,8 +1430,8 @@ void ClassFile::dump()
               << "Field count:         "
               << FIELD_COLOUR
               << fieldsCount
-              << "\n"
               << ANSI_RESET
+              << "\n"
               << "Method count:        "
               << METHOD_COLOUR
               << methodsCount
