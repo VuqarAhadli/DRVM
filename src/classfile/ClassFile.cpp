@@ -376,6 +376,7 @@ void ClassFile::dumpFields()
         if (fields[i].accessFlags & ACC_SYNTHETIC) std::cout << " SYNTHETIC";
         if (fields[i].accessFlags & ACC_ANNOTATION) std::cout << " ANNOTATION";
         if (fields[i].accessFlags & ACC_ENUM) std::cout << " ENUM";
+        if (fields[i].accessFlags & ACC_STATIC) std::cout << " STATIC";
 
         std::cout << "\n";
         for (auto& attribute : fields[i].attributes)

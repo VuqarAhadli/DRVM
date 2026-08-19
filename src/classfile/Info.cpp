@@ -14,7 +14,7 @@ FileInfo getFileInfo(const std::string& path)
     }
 
     info.size = static_cast<U8>(fs::file_size(path));
-    
+
     const std::time_t timeT = fileStat.st_mtime;
     const std::tm timeStruct = *std::localtime(&timeT);
 
@@ -38,3 +38,9 @@ FileInfo getFileInfo(const std::string& path)
 
     return info;
 }
+
+
+/**
+ * *** TODO:
+ * *** Use Windows API to access file size & last modified date
+ */
