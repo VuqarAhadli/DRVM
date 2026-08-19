@@ -45,6 +45,58 @@ std::string to_string(VerificationTypeTag tag)
                 + std::to_string(static_cast<int>(tag)) + ")" + ANSI_RESET;
     }
 }
+
+static U2 computeArgsSize(const std::string& descriptor, bool isStatic)
+{
+    U2 size = isStatic ? 0 : 1;   
+
+    std::size_t i = 1;   /* skip initial ( */
+    while (i < descriptor.size() && descriptor[i] != ')')
+    {
+        char c = descriptor[i];
+
+        if (c == '[')
+        {
+            while (i < descriptor.size() && descriptor[i] == '[')\
+            {
+                ++i;
+            }
+            
+            if (i < descriptor.size() && descriptor[i] == 'L')
+            {
+                while (i < descriptor.size() && descriptor[i] != ';')
+                {
+                    ++i;
+                }
+            }
+            ++i; /* Skip ; */
+            size += 1;
+        }
+        else if (c == 'L')
+        {
+            /* Reference type */
+            while (i < descriptor.size() && descriptor[i] != ';')
+                ++i;
+            ++i; /* Skip ; */
+            size += 1;
+        }
+        else if (c == 'J' || c == 'D')
+        {
+            /* long / double 2 slots */
+            size += 2;
+            ++i; /* Skip ; */
+        }
+        else
+        {
+            /* B, C, F, I, S, Z    1 slot */
+            size += 1;
+            ++i; /* Skip ; */
+        }
+    }
+
+    return size;
+}
+
 inline ConstantTag readConstantTag(U1 value)
 {
     return static_cast<ConstantTag>(value);
@@ -341,19 +393,24 @@ void ClassFile::dumpMethods()
         auto* name = getConstant<ConstantUtf8>(methods[i].nameIndex);
         auto* descriptor = getConstant<ConstantUtf8>(methods[i].descriptorIndex);
 
+        bool isStatic = methods[i].accessFlags & ACC_STATIC;
+        U2 argsSize = computeArgsSize(descriptor->value, isStatic);
+
         std::cout << "  #" << i << " " << name->value
-                   << " : " << descriptor->value
-                   << " (access_flags=0x" << std::hex << methods[i].accessFlags << std::dec << ")\n";
+                  << " : " << descriptor->value
+                  << " (access_flags=0x" << std::hex << methods[i].accessFlags << std::dec << ")"
+                  << " args_size=" << argsSize << "\n";
         std::cout << "  Access flags:";
-        if (accessFlags & ACC_PUBLIC) std::cout << " PUBLIC";
-        if (accessFlags & ACC_FINAL) std::cout << " FINAL";
-        if (accessFlags & ACC_SUPER) std::cout << " SUPER";
-        if (accessFlags & ACC_INTERFACE) std::cout << " INTERFACE";
-        if (accessFlags & ACC_ABSTRACT) std::cout << " ABSTRACT";
-        if (accessFlags & ACC_MODULE) std::cout << " MODULE";
-        if (accessFlags & ACC_SYNTHETIC) std::cout << " SYNTHETIC";
-        if (accessFlags & ACC_ANNOTATION) std::cout << " ANNOTATION";
-        if (accessFlags & ACC_ENUM) std::cout << " ENUM";
+        if (methods[i].accessFlags & ACC_PUBLIC) std::cout << " PUBLIC";
+        if (methods[i].accessFlags & ACC_FINAL) std::cout << " FINAL";
+        if (methods[i].accessFlags & ACC_SUPER) std::cout << " SUPER";
+        if (methods[i].accessFlags & ACC_INTERFACE) std::cout << " INTERFACE";
+        if (methods[i].accessFlags & ACC_ABSTRACT) std::cout << " ABSTRACT";
+        if (methods[i].accessFlags & ACC_MODULE) std::cout << " MODULE";
+        if (methods[i].accessFlags & ACC_SYNTHETIC) std::cout << " SYNTHETIC";
+        if (methods[i].accessFlags & ACC_ANNOTATION) std::cout << " ANNOTATION";
+        if (methods[i].accessFlags & ACC_ENUM) std::cout << " ENUM";
+        if (methods[i].accessFlags & ACC_STATIC) std::cout << " STATIC";
 
         std::cout << "\n";
         for (auto& attribute : methods[i].attributes)
@@ -1287,8 +1344,8 @@ std::string ClassFile::describeConstant(U2 index)
         case ConstantTag::Methodref:
         case ConstantTag::InterfaceMethodref:
         {
-            U2 classIndex;
-            U2 ntIndex;
+            U2 classIndex = 0;
+            U2 ntIndex = 0;
             switch (constantPool[index]->tag)
             {
                 case ConstantTag::Fieldref:
@@ -1393,17 +1450,3 @@ void ClassFile::dump()
     dumpAttributes();
 }
 
-/**
- *** TODO
- *** Opcode Dump Improvements
- * 1
- * Resolve constant-pool operands inline 
- * Fix branch offsets (IfNonNull, IfEq, Goto, etc.): read as S2, and convert to target pc + offset instead of raw value
- * 2
- * Show actual byte pc alongside instruction number, so exception table / StackMap offsets are cross-referenceable
- * Resolve `Exceptions` attribute indices to class names (chase ConstantClass -> nameIndex -> Utf8)
- * 3
- * Compute and print args_size for methods
- ***
- ***
- */
