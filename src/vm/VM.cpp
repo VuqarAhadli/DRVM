@@ -198,6 +198,11 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             {
                 U1 index = bytecode[frame.programCounter];
                 frame.programCounter++;
+                
+                if (index >= frame.locals.size())
+                {
+                    throw std::runtime_error("*load: local variable index out of bounds");
+                }
                 frame.push(frame.locals[index]);
                 break;
             }
@@ -491,6 +496,12 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             {
                 U1 index = bytecode[frame.programCounter];
                 frame.programCounter++;
+
+                if (index >= frame.locals.size())
+                {
+                    throw std::runtime_error("*store: local variable index out of bounds");
+                }
+
                 frame.locals[index] = frame.pop();
                 break;
 
