@@ -745,6 +745,36 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::BAStore:
+            {
+                U1 value = std::get<U1>(frame.pop());
+                S4 index = std::get<S4>(frame.pop());
+
+                Value arrayReferenceValue = frame.pop();
+
+                HeapObject** arrayRef = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if(!arrayRef || !(*arrayRef))
+                {
+                    throw std::runtime_error("NullPointerException: bastore on null array refernce");
+                }
+                if((*arrayRef)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("bastore: reference is not an array");
+                }
+
+                ArrayHeapObject* arrayObject = static_cast<ArrayHeapObject*>(*arrayRef);
+                if(arrayObject->elementType != ValueType::Byte && arrayObject->elementType != ValueType::Byte)
+                {
+                    throw std::runtime_error("bastore: array element type is not bool / byte");
+                }
+                if(index < 0 || static_cast<U4>(index) >= arrayObject->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(U1)], &value, sizeof(U1));
+                break;
+            }
 
             case Opcode::IAdd:
             {
