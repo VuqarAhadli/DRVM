@@ -747,7 +747,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             }
             case Opcode::BAStore:
             {
-                U1 value = std::get<U1>(frame.pop());
+                U1 value = static_cast<U1>(std::get<S4>(frame.pop()));
                 S4 index = std::get<S4>(frame.pop());
 
                 Value arrayReferenceValue = frame.pop();
@@ -763,7 +763,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 }
 
                 ArrayHeapObject* arrayObject = static_cast<ArrayHeapObject*>(*arrayRef);
-                if(arrayObject->elementType != ValueType::Byte && arrayObject->elementType != ValueType::Byte)
+                if(arrayObject->elementType != ValueType::Byte && arrayObject->elementType != ValueType::Boolean)
                 {
                     throw std::runtime_error("bastore: array element type is not bool / byte");
                 }
@@ -773,6 +773,67 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 }
 
                 std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(U1)], &value, sizeof(U1));
+                break;
+            }
+            case Opcode::CAStore:
+            {
+                U2 value = static_cast<U2>(std::get<S4>(frame.pop()));
+                S4 index = std::get<S4>(frame.pop());
+
+                Value arrayReferenceValue = frame.pop();
+
+                HeapObject** arrayRef = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if(!arrayRef || !(*arrayRef))
+                {
+                    throw std::runtime_error("NullPointerException: castore on null array refernce");
+                }
+                if((*arrayRef)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("castore: reference is not an array");
+                }
+
+                ArrayHeapObject* arrayObject = static_cast<ArrayHeapObject*>(*arrayRef);
+                if(arrayObject->elementType != ValueType::Char)
+                {
+                    throw std::runtime_error("castore: array element type is not char");
+                }
+                if(index < 0 || static_cast<U4>(index) >= arrayObject->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(U2)], &value, sizeof(U2));
+                break;
+            }
+            case Opcode::SAStore:
+            {
+                S4 value = std::get<S4>(frame.pop());
+                S4 index = std::get<S4>(frame.pop());
+
+                Value arrayReferenceValue = frame.pop();
+
+                HeapObject** arrayRef = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if(!arrayRef || !(*arrayRef))
+                {
+                    throw std::runtime_error("NullPointerException: sastore on null array refernce");
+                }
+                if((*arrayRef)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("sastore: reference is not an array");
+                }
+
+                ArrayHeapObject* arrayObject = static_cast<ArrayHeapObject*>(*arrayRef);
+                if(arrayObject->elementType != ValueType::Short)
+                {
+                    throw std::runtime_error("sastore: array element type is not short");
+                }
+                if(index < 0 || static_cast<U4>(index) >= arrayObject->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                S2 s2Value = static_cast<S2>(value);
+                std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(S2)], &s2Value, sizeof(S2));
                 break;
             }
 
