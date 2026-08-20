@@ -704,7 +704,45 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     throw std::runtime_error("ArrayIndexOutOfBoundsException");
                 }
 
-                std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(F8)], &value, sizeof(F4));
+                std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(F8)], &value, sizeof(F8));
+                break;
+            }
+            case Opcode::AAStore:
+            {
+                Value value = frame.pop();
+                HeapObject** obj = std::get_if<HeapObject*>(&value);
+
+                if (!obj)
+                {
+                    throw std::runtime_error("aastore: value on stack is not a reference type");
+                }
+
+                S4 index = std::get<S4>(frame.pop());
+
+                Value arrayReferenceValue = frame.pop();
+
+                HeapObject** arrayRef = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if(!arrayRef || !(*arrayRef))
+                {
+                    throw std::runtime_error("NullPointerException: aastore on null array refernce");
+                }
+                if((*arrayRef)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("aastore: reference is not an array");
+                }
+
+                ArrayHeapObject* arrayObject = static_cast<ArrayHeapObject*>(*arrayRef);
+                if(arrayObject->elementType != ValueType::Reference)
+                {
+                    throw std::runtime_error("aastore: array element type is not reference type");
+                }
+                if(index < 0 || static_cast<U4>(index) >= arrayObject->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                arrayObject->referenceData[static_cast<size_t>(index)] = *obj;
+
                 break;
             }
 
