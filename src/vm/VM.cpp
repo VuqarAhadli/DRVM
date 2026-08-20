@@ -677,6 +677,36 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(F4)], &value, sizeof(F4));
                 break;
             }
+            case Opcode::DAStore:
+            {
+                F8 value = std::get<F8>(frame.pop());
+                S4 index = std::get<S4>(frame.pop());
+
+                Value arrayReferenceValue = frame.pop();
+
+                HeapObject** arrayRef = std::get_if<HeapObject*>(&arrayReferenceValue);
+                if(!arrayRef || !(*arrayRef))
+                {
+                    throw std::runtime_error("NullPointerException: dastore on null array refernce");
+                }
+                if((*arrayRef)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("dastore: reference is not an array");
+                }
+
+                ArrayHeapObject* arrayObject = static_cast<ArrayHeapObject*>(*arrayRef);
+                if(arrayObject->elementType != ValueType::Double)
+                {
+                    throw std::runtime_error("dastore: array element type is not float");
+                }
+                if(index < 0 || static_cast<U4>(index) >= arrayObject->length)
+                {
+                    throw std::runtime_error("ArrayIndexOutOfBoundsException");
+                }
+
+                std::memcpy(&arrayObject->primitiveData[static_cast<size_t>(index) * sizeof(F8)], &value, sizeof(F4));
+                break;
+            }
 
             case Opcode::IAdd:
             {
