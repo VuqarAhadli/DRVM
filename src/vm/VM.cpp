@@ -871,7 +871,26 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 frame.push(top);
                 frame.push(top);
-                
+
+                break;
+            }
+            case Opcode::DupX1:
+            {
+                Value val1 = frame.pop(); 
+                Value val2 = frame.pop(); 
+
+                bool val1Is2Bytes = !std::get_if<F8>(&val1) && !std::get_if<S8>(&val1);
+                bool val2Is2Bytes = !std::get_if<F8>(&val2) && !std::get_if<S8>(&val2);
+
+                if (val1Is2Bytes || val2Is2Bytes)
+                {
+                    throw std::runtime_error("dupx1: illegal value types (double / long)");
+                }
+
+                frame.push(val1);
+                frame.push(val2);
+                frame.push(val1);
+
                 break;
             }
 
