@@ -865,6 +865,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::Dup:
+            {
+                auto top = frame.pop();
+
+                frame.push(top);
+                frame.push(top);
+                
+                break;
+            }
+
 
 
             case Opcode::IAdd:
