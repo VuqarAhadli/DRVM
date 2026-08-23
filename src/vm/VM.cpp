@@ -848,6 +848,25 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::Pop:
+            {
+                frame.pop();
+                break;
+            }
+            case Opcode::Pop2:
+            {
+                Value temp = frame.pop(); 
+
+                if (!std::get_if<S8>(&temp) && !std::get_if<F8>(&temp))
+                {
+                    frame.pop();
+                }
+                
+                break;
+            }
+
+
+
             case Opcode::IAdd:
             {
                 S4 b = std::get<S4>(frame.pop());
