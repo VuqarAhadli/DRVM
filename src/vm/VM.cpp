@@ -903,7 +903,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 if (val1IsCategory2)
                 {
-                    throw std::runtime_error("dup_x2: illegal category-2 value as val1");
+                    throw std::runtime_error("dup_x2: illegal value type of value1 (double / long)");
                 }
 
                 if (val2IsCategory2)
