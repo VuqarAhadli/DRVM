@@ -898,15 +898,15 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 Value val1 = frame.pop();
                 Value val2 = frame.pop();
 
-                bool val1IsCategory2 = std::get_if<F8>(&val1) || std::get_if<S8>(&val1);
-                bool val2IsCategory2 = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
+                bool val1Is2Bytes = std::get_if<F8>(&val1) || std::get_if<S8>(&val1);
+                bool val2Is2Bytes = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
 
-                if (val1IsCategory2)
+                if (val1Is2Bytes)
                 {
                     throw std::runtime_error("dup_x2: illegal value type of value1 (double / long)");
                 }
 
-                if (val2IsCategory2)
+                if (val2Is2Bytes)
                 {
                     frame.push(val1);
                     frame.push(val2);
@@ -921,6 +921,33 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     frame.push(val2);
                     frame.push(val1);
                 }
+
+                break;
+            }
+            case Opcode::Dup2:
+            {
+                Value val1 = frame.pop();
+
+                bool val1Is2Bytes = std::get_if<F8>(&val1) || std::get_if<S8>(&val1);
+
+                if (!val1Is2Bytes)
+                {
+                    Value val2 = frame.pop();
+                    bool val2Is2Bytes = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
+                    if (val2Is2Bytes)
+                    {
+                        throw std::runtime_error("dup2: illegal value type of value2 (double / long)");
+                    }
+                    frame.push(val1);
+                    frame.push(val2);
+                    frame.push(val1);
+                    frame.push(val2);
+                    break;
+                }
+
+                frame.push(val1);
+                frame.push(val1);
+                
 
                 break;
             }
