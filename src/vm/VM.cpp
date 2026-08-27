@@ -938,10 +938,10 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     {
                         throw std::runtime_error("dup2: illegal value type of value2 (double / long)");
                     }
-                    frame.push(val1);
                     frame.push(val2);
                     frame.push(val1);
                     frame.push(val2);
+                    frame.push(val1);
                     break;
                 }
 
