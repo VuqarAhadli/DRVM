@@ -1061,6 +1061,32 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(val1);
                 break;
             }
+
+            case Opcode::Swap:
+            {
+                auto val1 = frame.pop();
+
+                bool val1Is2Bytes = std::get_if<F8>(&val1) || std::get_if<S8>(&val1);
+
+                if (val1Is2Bytes)
+                {
+                    throw std::runtime_error("swap: illegal value type of value1 (double / long)");
+                }
+
+                auto val2 = frame.pop();
+
+                bool val2Is2Bytes = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
+
+                if (val2Is2Bytes)
+                {
+                    throw std::runtime_error("swap: illegal value type of value2 (double / long)");
+                }
+
+                frame.push(val1);
+                frame.push(val2);
+
+                break;
+            }
             
 
 
