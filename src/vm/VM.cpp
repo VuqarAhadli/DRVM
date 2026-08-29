@@ -951,6 +951,117 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::Dup2X1:
+            {
+                Value val1 = frame.pop();
+
+                bool val1Is2Bytes = std::get_if<F8>(&val1) || std::get_if<S8>(&val1);
+
+                if (!val1Is2Bytes)
+                {
+                    Value val2 = frame.pop();
+                    bool val2Is2Bytes = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
+                    if (val2Is2Bytes)
+                    {
+                        throw std::runtime_error("dup2_x1: illegal value type of value2 (double / long)");
+                    }
+
+                    Value val3 = frame.pop();
+                    bool val3Is2Bytes = std::get_if<F8>(&val3) || std::get_if<S8>(&val3);
+                    if (val3Is2Bytes)
+                    {
+                        throw std::runtime_error("dup2_x1: illegal value type of value3 (double / long)");
+                    }
+
+                    frame.push(val2);
+                    frame.push(val1);
+                    frame.push(val3);
+                    frame.push(val2);
+                    frame.push(val1);
+
+                    break;
+                }
+
+                Value val2 = frame.pop();
+                bool val2Is2Bytes = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
+                if (val2Is2Bytes)
+                {
+                    throw std::runtime_error("dup2_x1: illegal value type of value2 (double / long)");
+                }
+
+                frame.push(val1);
+                frame.push(val2);
+                frame.push(val1);
+
+
+                break;
+            }
+            case Opcode::Dup2X2:
+            {
+                Value val1 = frame.pop();
+                bool val1Is2Bytes = std::get_if<F8>(&val1) || std::get_if<S8>(&val1);
+
+                if (!val1Is2Bytes)
+                {
+                    Value val2 = frame.pop();
+                    bool val2Is2Bytes = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
+                    if (val2Is2Bytes)
+                    {
+                        throw std::runtime_error("dup2_x2: value2 must 1 byte value1 is 1 byte");
+                    }
+
+                    Value val3 = frame.pop();
+                    bool val3Is2Bytes = std::get_if<F8>(&val3) || std::get_if<S8>(&val3);
+                    if (val3Is2Bytes)
+                    {
+                        frame.push(val2);
+                        frame.push(val1);
+                        frame.push(val3);
+                        frame.push(val2);
+                        frame.push(val1);
+                        break;
+                    }
+
+                    Value val4 = frame.pop();
+                    bool val4Is2Bytes = std::get_if<F8>(&val4) || std::get_if<S8>(&val4);
+                    if (val4Is2Bytes)
+                    {
+                        throw std::runtime_error("dup2_x2: value4 must be 1 byte");
+                    }
+
+                    frame.push(val2);
+                    frame.push(val1);
+                    frame.push(val4);
+                    frame.push(val3);
+                    frame.push(val2);
+                    frame.push(val1);
+                    break;
+                }
+
+                Value val2 = frame.pop();
+                bool val2Is2Bytes = std::get_if<F8>(&val2) || std::get_if<S8>(&val2);
+                if (val2Is2Bytes)
+                {
+                    frame.push(val1);
+                    frame.push(val2);
+                    frame.push(val1);
+                    break;
+                }
+
+                Value val3 = frame.pop();
+                bool val3Is2Bytes = std::get_if<F8>(&val3) || std::get_if<S8>(&val3);
+                if (val3Is2Bytes)
+                {
+                    throw std::runtime_error("dup2_x2: value3 must be 1 byte");
+                }
+
+                frame.push(val1);
+                frame.push(val3);
+                frame.push(val2);
+                frame.push(val1);
+                break;
+            }
+            
 
 
             case Opcode::IAdd:
