@@ -1128,6 +1128,145 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(S4(a - b));
                 break;
             }
+            case Opcode::LSub:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+                frame.push(S8(a - b));
+                break;
+            }
+            case Opcode::FSub:
+            {
+                F4 b = std::get<F4>(frame.pop());
+                F4 a = std::get<F4>(frame.pop());
+                frame.push(F4(a - b));
+                break;
+            }
+            case Opcode::DSub:
+            {
+                F8 b = std::get<F8>(frame.pop());
+                F8 a = std::get<F8>(frame.pop());
+                frame.push(F8(a - b));
+                break;
+            }
+
+            case Opcode::IMul:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+                frame.push(S4(a * b));
+                break;
+            }
+            case Opcode::LMul:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+                frame.push(S8(a * b));
+                break;
+            }
+            case Opcode::FMul:
+            {
+                F4 b = std::get<F4>(frame.pop());
+                F4 a = std::get<F4>(frame.pop());
+                frame.push(F4(a * b));
+                break;
+            }
+            case Opcode::DMul:
+            {
+                F8 b = std::get<F8>(frame.pop());
+                F8 a = std::get<F8>(frame.pop());
+                frame.push(F8(a * b));
+                break;
+            }
+
+
+            case Opcode::IDiv:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                if (b == 0)
+                {
+                    throw std::runtime_error("ArithmeticException: division by zero");
+                }
+
+                frame.push(S4(a / b));
+                break;
+            }
+            case Opcode::LDiv:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+
+                if (b == 0)
+                {
+                    throw std::runtime_error("ArithmeticException: division by zero");
+                }
+
+                frame.push(S8(a / b));
+                break;
+            }
+            case Opcode::FDiv:
+            {
+                F4 b = std::get<F4>(frame.pop());
+                F4 a = std::get<F4>(frame.pop());
+
+                frame.push(F4(a / b));
+                break;
+            }
+            case Opcode::DDiv:
+            {
+                F8 b = std::get<F8>(frame.pop());
+                F8 a = std::get<F8>(frame.pop());
+
+                frame.push(F8(a / b));
+                break;
+            }
+
+
+
+            case Opcode::IRem:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                if (b == 0)
+                {
+                    throw std::runtime_error("ArithmeticException: division by zero");
+                }
+
+                frame.push(S4(a % b));
+                break;
+            }
+            case Opcode::LRem:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+
+                if (b == 0)
+                {
+                    throw std::runtime_error("ArithmeticException: division by zero");
+                }
+
+                frame.push(S8(a % b));
+                break;
+            }
+            case Opcode::FRem:
+            {
+                F4 b = std::get<F4>(frame.pop());
+                F4 a = std::get<F4>(frame.pop());
+
+                frame.push(F4(std::fmod(a, b)));
+                break;
+            }
+            case Opcode::DRem:
+            {
+                F8 b = std::get<F8>(frame.pop());
+                F8 a = std::get<F8>(frame.pop());
+
+                frame.push(F8(std::fmod(a, b)));
+                break;
+            }
 
             case Opcode::IReturn:
                 return frame.pop();
