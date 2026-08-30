@@ -1097,6 +1097,29 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(S4(a + b));
                 break;
             }
+            case Opcode::LAdd:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+                frame.push(S8(a + b));
+                break;
+            }
+            case Opcode::FAdd:
+            {
+                F4 b = std::get<F4>(frame.pop());
+                F4 a = std::get<F4>(frame.pop());
+                frame.push(F4(a + b));
+                break;
+            }
+            case Opcode::DAdd:
+            {
+                F8 b = std::get<F8>(frame.pop());
+                F8 a = std::get<F8>(frame.pop());
+                frame.push(F8(a + b));
+                break;
+            }
+
+
 
             case Opcode::ISub:
             {
