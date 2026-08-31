@@ -1391,7 +1391,37 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
-            
+            case Opcode::IOr:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+                frame.push(S4(a | b));
+                break;
+            }
+            case Opcode::LOr:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+                frame.push(S8(a | b));
+                break;
+            }
+
+            case Opcode::IXor:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+                frame.push(S4(a ^ b));
+                break;
+            }
+            case Opcode::LXor:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+                frame.push(S8(a ^ b));
+                break;
+            }
+
+
 
             case Opcode::IReturn:
                 return frame.pop();
