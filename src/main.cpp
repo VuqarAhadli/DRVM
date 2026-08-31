@@ -13,11 +13,15 @@ int main(int argc, char** argv)
         return 1;
     }
 
+    
     ClassFile cls(argv[1]);
+
 
     cls.dump();
 
     /* testing execution */
+    if (argc == 3 )
+    {
     const MethodInfo* clinit = cls.findMethod("<clinit>", "()V");
     if (clinit)
     {
@@ -42,6 +46,6 @@ int main(int argc, char** argv)
     {
         std::cout << "\nNo <clinit> found, skipping VM test.\n";
     }
-
+    }
     return 0;
 }
