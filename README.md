@@ -4,6 +4,13 @@
 
 A custom Java Virtual Machine (JVM) implementation for reverse engineering the iconic J2ME game **Diamond Rush**.
 
+
+## What it does
+
+Right now, this project can replicate the behaviour of `javap`, the Java class file disassembler. Funnily enough, drvm's disassembler works way faster than the original Java implementation, thanks to C++'s performance advantages. 
+
+Additionally, it can currently execute roughly half of the JVM opcodes. Nonetheless, the VM part is still a work in progress. The main goal of this project is to be able to run the original game on modern platforms, such as Linux and macOS. 
+
 ## Future Plans
 
 Once the VM is fully functional on Linux and macOS (hopefully), I plan to port it and its graphics backend to a variety of popular microcontroller platforms, such as the ESP32 and RP2040/RP2350.
