@@ -1268,6 +1268,38 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+
+
+            case Opcode::INeg:
+            {
+                S4 a = std::get<S4>(frame.pop());
+
+
+                frame.push(S4(-a));
+                break;
+            }
+            case Opcode::LNeg:
+            {
+                S8 a = std::get<S8>(frame.pop());
+
+                frame.push(S8(-a));
+                break;
+            }
+            case Opcode::FNeg:
+            {
+                F4 a = std::get<F4>(frame.pop());
+
+                frame.push(F4(-a));
+                break;
+            }
+            case Opcode::DNeg:
+            {
+                F8 a = std::get<F8>(frame.pop());
+
+                frame.push(F8(-a));
+                break;
+            }
+
             case Opcode::IReturn:
                 return frame.pop();
 
