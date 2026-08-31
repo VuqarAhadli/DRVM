@@ -1300,6 +1300,99 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+
+            case Opcode::IShl:
+            {
+                S4 pos = std::get<S4>(frame.pop());
+                S4 x = std::get<S4>(frame.pop());
+
+                U4 val = static_cast<U4>(x);
+                U4 shift = static_cast<U4>(pos) & 0x1F; /* 5 low bits 0x...***** */
+
+
+                frame.push(static_cast<S4>(val << shift));
+                break;
+            }
+            case Opcode::LShl:
+            {
+                S4 pos = std::get<S4>(frame.pop());
+                S8 x = std::get<S8>(frame.pop());
+
+                U8 val = static_cast<U8>(x);
+                U8 shift = static_cast<U8>(pos) & 0x3F; /* 6 low bits 0x...****** */
+
+                frame.push(static_cast<S8>(val << shift));
+                break;
+            }
+
+
+            case Opcode::IShr:
+            {
+                S4 pos = std::get<S4>(frame.pop());
+                S4 x = std::get<S4>(frame.pop());
+
+                U4 shift = static_cast<U4>(pos) & 0x1F; /* 5 low bits 0x...***** */
+
+
+                frame.push(static_cast<S4>(x >> shift));
+                break;
+            }
+            case Opcode::LShr:
+            {
+                S4 pos = std::get<S4>(frame.pop());
+                S8 x = std::get<S8>(frame.pop());
+
+                U8 shift = static_cast<U8>(pos) & 0x3F; /* 6 low bits 0x...****** */
+
+                frame.push(static_cast<S8>(x >> shift));
+                break;
+            }
+
+
+            case Opcode::IUShr:
+            {
+                S4 pos = std::get<S4>(frame.pop());
+                S4 x = std::get<S4>(frame.pop());
+
+                U4 val = static_cast<U4>(x);
+                U4 shift = static_cast<U4>(pos) & 0x1F; /* 5 low bits 0x...***** */
+
+
+                frame.push(static_cast<S4>(val >> shift));
+                break;
+            }
+            case Opcode::LUShr:
+            {
+                S4 pos = std::get<S4>(frame.pop());
+                S8 x = std::get<S8>(frame.pop());
+
+                U8 val = static_cast<U8>(x);
+                U8 shift = static_cast<U8>(pos) & 0x3F; /* 6 low bits 0x...****** */
+
+                frame.push(static_cast<S8>(val >> shift));
+                break;
+            }
+
+
+
+
+            case Opcode::IAnd:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+                frame.push(S4(a & b));
+                break;
+            }
+            case Opcode::LAnd:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+                frame.push(S8(a & b));
+                break;
+            }
+
+            
+
             case Opcode::IReturn:
                 return frame.pop();
 
