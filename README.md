@@ -24,6 +24,24 @@ make
 ```
 > Note: The project does not use any external libraries yet.
 
+# How to use the disassembler
+
+After building DRVM, you can use it to inspect a Java `.class` file directly from the command line.
+
+For example: 
+
+``` bash
+./drvm  path/to/class/file.class
+```
+
+The repo already contains extracted contents of the game's `.jar ` file. 
+
+You can access the extracted `.class`  files from the build directory like this:
+
+``` bash
+./drvm  ../extracted/a.class
+```
+
 ## Constant pool dump
 <br>
 <p align="center">
