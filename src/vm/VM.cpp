@@ -1441,6 +1441,212 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::I2L:
+            {
+                S4 intVal = std::get<S4>(frame.pop());
+
+                S8 longVal = static_cast<S8>(intVal);
+
+                frame.push(longVal);
+
+                break;
+            }
+            case Opcode::I2F:
+            {
+                S4 intVal = std::get<S4>(frame.pop());
+
+                F4 floatVal = static_cast<F4>(intVal);
+
+                frame.push(floatVal);
+
+                break;
+            }
+            case Opcode::I2D:
+            {
+                S4 intVal = std::get<S4>(frame.pop());
+
+                F8 doubleVal = static_cast<F8>(intVal);
+
+                frame.push(doubleVal);
+
+                break;
+            }
+            case Opcode::L2I:
+            {
+                S8 longVal = std::get<S8>(frame.pop());
+
+                S4 intVal = static_cast<S4>(longVal);
+
+                frame.push(intVal);
+                break;
+            }
+            case Opcode::L2F:
+            {
+                S8 longVal = std::get<S8>(frame.pop());
+
+                F4 floatVal = static_cast<F4>(longVal);
+                
+                frame.push(floatVal);
+                break;
+            }
+            case Opcode::L2D:
+            {
+                S8 longVal = std::get<S8>(frame.pop());
+
+                F8 doubleVal = static_cast<F8>(longVal);
+
+                frame.push(doubleVal);
+
+                break;
+            }
+            case Opcode::F2I:
+            {
+                F4 floatVal = std::get<F4>(frame.pop());
+
+                S4 intVal;
+
+                if (std::isnan(floatVal))
+                {
+                    intVal = 0;
+                }
+                else if (floatVal >= static_cast<F4>(std::numeric_limits<S4>::max()))
+                {
+                    intVal = std::numeric_limits<S4>::max();
+                }
+                else if (floatVal <= static_cast<F4>(std::numeric_limits<S4>::min()))
+                {
+                    intVal = std::numeric_limits<S4>::min();
+                }
+                else
+                {
+                    intVal = static_cast<S4>(floatVal);
+                }
+
+                
+                frame.push(intVal);
+                
+                break;
+            }
+            case Opcode::F2L:
+            {
+                F4 floatVal = std::get<F4>(frame.pop());
+                S8 longVal;
+
+                if (std::isnan(floatVal))
+                {
+                    longVal = 0;
+                }
+                else if (floatVal >= static_cast<F4>(std::numeric_limits<S8>::max()))
+                {
+                    longVal = std::numeric_limits<S8>::max();
+                }
+                else if (floatVal <= static_cast<F4>(std::numeric_limits<S8>::min()))
+                {
+                    longVal = std::numeric_limits<S8>::min();
+                }
+                else
+                {
+                    longVal = static_cast<S8>(floatVal);
+                }
+
+
+                frame.push(longVal);
+                break;
+            }
+            case Opcode::F2D:
+            {
+                F4 floatVal = std::get<F4>(frame.pop());
+
+                F8 doubleVal = static_cast<F8>(floatVal);
+
+                frame.push(doubleVal);
+
+                break;
+            }
+            case Opcode::D2I:
+            {
+                F8 doubleVal = std::get<F8>(frame.pop());
+                S4 intVal;
+
+                if (std::isnan(doubleVal))
+                {
+                    intVal = 0;
+                }
+                else if (doubleVal >= static_cast<F8>(std::numeric_limits<S4>::max()))
+                {
+                    intVal = std::numeric_limits<S4>::max();
+                }
+                else if (doubleVal <= static_cast<F8>(std::numeric_limits<S4>::min()))
+                {
+                    intVal = std::numeric_limits<S4>::min();
+                }
+                else
+                {
+                    intVal = static_cast<S4>(doubleVal);
+                }
+
+
+                frame.push(intVal);
+                break;
+            }
+            case Opcode::D2L:
+            {
+                F8 doubleVal = std::get<F8>(frame.pop());
+                S8 longVal;
+
+                if (std::isnan(doubleVal))
+                {
+                    longVal = 0;
+                }
+                else if (doubleVal >= static_cast<F8>(std::numeric_limits<S8>::max()))
+                {
+                    longVal = std::numeric_limits<S8>::max();
+                }
+                else if (doubleVal <= static_cast<F8>(std::numeric_limits<S8>::min()))
+                {
+                    longVal = std::numeric_limits<S8>::min();
+                }
+                else
+                {
+                    longVal = static_cast<S8>(doubleVal);
+                }
+
+                frame.push(longVal);
+                break;
+            }
+            case Opcode::D2F:
+            {
+                F8 doubleVal = std::get<F8>(frame.pop());
+                F4 floatVal = static_cast<F4>(doubleVal);
+                frame.push(floatVal);
+                break;
+            }
+            case Opcode::I2B:
+            {
+                S4 intVal = std::get<S4>(frame.pop());
+                S1 byteVal = static_cast<S1>(intVal);
+
+                frame.push(S4(byteVal));   
+                break;
+            }
+            case Opcode::I2C:
+            {
+                S4 intVal = std::get<S4>(frame.pop());
+                U2 charVal = static_cast<U2>(intVal);
+
+                frame.push(S4(charVal));   
+                break;
+            }
+            case Opcode::I2S:
+            {
+                S4 intVal = std::get<S4>(frame.pop());
+                S2 shortVal = static_cast<S2>(intVal);
+
+                frame.push(S4(shortVal));  
+
+                break;
+            }
+
 
 
             case Opcode::IReturn:
