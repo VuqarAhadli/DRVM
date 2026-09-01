@@ -1647,6 +1647,86 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::LCmp:
+            {
+                S8 b = std::get<S8>(frame.pop());
+                S8 a = std::get<S8>(frame.pop());
+
+                if (b == a)
+                {
+                    frame.push(S4(0));
+                    break;
+                }
+                else if (b < a)
+                {
+                    frame.push(S4(1));
+                    break;
+                }
+                else
+                {
+                    frame.push(S4(-1));
+                    break;
+                }
+
+                break;
+            }
+            case Opcode::FCmpL:
+            {
+                F4 b = std::get<F4>(frame.pop());
+                F4 a = std::get<F4>(frame.pop());
+
+                if (std::isnan(a) || std::isnan(b))
+                {
+                    frame.push(S4(-1))
+                }
+            
+                else if (b == a)
+                {
+                    frame.push(S4(0));
+                    break;
+                }
+                else if (b < a)
+                {
+                    frame.push(S4(1));
+                    break;
+                }
+                else
+                {
+                    frame.push(S4(-1));
+                    break;
+                }
+
+                break;
+            }
+            case Opcode::FCmpG:
+            {
+                F4 b = std::get<F4>(frame.pop());
+                F4 a = std::get<F4>(frame.pop());
+
+                if (std::isnan(a) || std::isnan(b))
+                {
+                    frame.push(S4(1))
+                }
+            
+                else if (b == a)
+                {
+                    frame.push(S4(0));
+                    break;
+                }
+                else if (b < a)
+                {
+                    frame.push(S4(1));
+                    break;
+                }
+                else
+                {
+                    frame.push(S4(-1));
+                    break;
+                }
+
+                break;
+            }
+
 
 
             case Opcode::IReturn:
