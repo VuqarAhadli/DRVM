@@ -1421,6 +1421,26 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::IInc:
+            {
+                U1 idx = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                S1 cons = static_cast<S1>(bytecode[frame.programCounter]);
+                frame.programCounter++;
+
+                if (idx >= frame.locals.size())
+                {
+                    throw std::runtime_error("iinc: local variable index out of bounds");
+                }
+
+                S4 val = std::get<S4>(frame.locals[idx]);
+
+                frame.locals[idx] = S4(val  + cons);
+
+                break;
+            }
+
 
 
             case Opcode::IReturn:
