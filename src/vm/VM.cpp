@@ -1705,9 +1705,8 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 if (std::isnan(a) || std::isnan(b))
                 {
-                    frame.push(S4(1))
+                    frame.push(S4(1));
                 }
-            
                 else if (b == a)
                 {
                     frame.push(S4(0));
