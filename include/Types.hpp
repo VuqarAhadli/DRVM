@@ -4,7 +4,7 @@
 #include <string>
 
 using U1 = std::uint8_t;
-using U2 = std::uint16_t;
+using U2 = std::uint16_t; // JVM Char
 using U4 = std::uint32_t;
 using U8 = std::uint64_t;
 
