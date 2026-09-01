@@ -1,8 +1,8 @@
 <img align="right" src="extracted/splash" width="200" alt="Diamond Rush Splash">
 
-# Diamond Rush Emulator
+# DRVM
 
-A custom Java Virtual Machine (JVM) implementation for reverse engineering the iconic J2ME game **Diamond Rush**.
+DRVM (Diamond Rush Virtual Machine) is a custom Java Virtual Machine (JVM) implementation for reverse engineering the iconic J2ME game **Diamond Rush**.
 
 
 ## What it does
