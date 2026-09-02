@@ -1864,6 +1864,27 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::IfGe:
+            {
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+                S4 val = std::get<S4>(frame.pop());
+
+                if (val >= 0)
+                {
+                    frame.programCounter = opcodeStart + brachOffset;
+                }
+
+                break;
+            }
 
 
 
