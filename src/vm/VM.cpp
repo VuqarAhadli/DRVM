@@ -2153,6 +2153,36 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             }
 
 
+            case Opcode::Jsr:
+            {
+                U8 opcodeStart = frame.programCounter - 1;
+
+                U1 branchByte1 = bytecode[frame.programCounter++];
+                U1 branchByte2 = bytecode[frame.programCounter++];
+                S2 branchOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+                S4 returnAddress = static_cast<S4>(frame.programCounter);
+                frame.push(returnAddress);
+
+                frame.programCounter = opcodeStart + branchOffset;
+                break;
+            }
+            case Opcode::Ret:
+            {
+                U1 index = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                if (index >= frame.locals.size())
+                {
+                    throw std::runtime_error("ret: local variable index out of bounds");
+                }
+
+                S4 returnAddress = std::get<S4>(frame.locals[index]);
+                frame.programCounter = static_cast<U8>(returnAddress);
+                break;
+            }
+
+
 
             case Opcode::IReturn:
                 return frame.pop();
