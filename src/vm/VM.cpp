@@ -2228,12 +2228,11 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     U8 entryPos = frame.programCounter + static_cast<U8>(index - low) * 4;
                     
                     S4 jumpOffset = static_cast<S4>(
-                        (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
-                        (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
-                        (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
-                        (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                        (static_cast<U4>(bytecode[entryPos]) << 24) |
+                        (static_cast<U4>(bytecode[entryPos + 1]) << 16) |
+                        (static_cast<U4>(bytecode[entryPos + 2]) << 8) |
+                        (static_cast<U4>(bytecode[entryPos + 3]))
                     );
-                    frame.programCounter += 4;
 
                     frame.programCounter = opcodeStart + jumpOffset;
                 }
