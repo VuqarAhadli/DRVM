@@ -2077,6 +2077,62 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::IfACmpEq:
+            {
+                Value bRef = frame.pop();
+                Value aRef = frame.pop();
+
+                HeapObject** b = std::get_if<HeapObject*>(&bRef);
+                HeapObject** a = std::get_if<HeapObject*>(&aRef);
+
+                if (!a || !b)
+                {
+                    throw std::runtime_error("if_acmpeq: operands are not reference types");
+                }
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                S2 branchOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+                if (*a == *b)
+                {
+                    frame.programCounter = opcodeStart + branchOffset;
+                }
+                break;
+            }
+            case Opcode::IfACmpNe:
+            {
+                Value bRef = frame.pop();
+                Value aRef = frame.pop();
+
+                HeapObject** b = std::get_if<HeapObject*>(&bRef);
+                HeapObject** a = std::get_if<HeapObject*>(&aRef);
+
+                if (!a || !b)
+                {
+                    throw std::runtime_error("if_acmpne: operands are not reference types");
+                }
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                S2 branchOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+                if (*a != *b)
+                {
+                    frame.programCounter = opcodeStart + branchOffset;
+                }
+                break;
+            }
 
 
 
