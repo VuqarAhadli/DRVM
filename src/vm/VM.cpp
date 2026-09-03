@@ -2183,6 +2183,123 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             }
 
 
+            case Opcode::TableSwitch:
+            {
+                U8 opcodeStart = frame.programCounter - 1;
+
+                while (frame.programCounter % 4 != 0)
+                {
+                    frame.programCounter++;
+                }
+
+                S4 defaultOffset = static_cast<S4>(
+                    (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                );
+                frame.programCounter += 4;
+
+
+                S4 low = static_cast<S4>(
+                    (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                );
+                frame.programCounter += 4;
+
+                S4 high = static_cast<S4>(
+                    (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                );
+                frame.programCounter += 4;
+
+                S4 index = std::get<S4>(frame.pop());
+
+                if (index < low || index > high)
+                {
+                    frame.programCounter = opcodeStart + defaultOffset;
+                }
+                else
+                {
+                    U8 entryPos = frame.programCounter + static_cast<U8>(index - low) * 4;
+                    
+                    S4 jumpOffset = static_cast<S4>(
+                        (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                    );
+                    frame.programCounter += 4;
+
+                    frame.programCounter = opcodeStart + jumpOffset;
+                }
+                break;
+            }
+            case Opcode::LookupSwitch:
+            {
+                U8 opcodeStart = frame.programCounter - 1;
+
+                while (frame.programCounter % 4 != 0)
+                {
+                    frame.programCounter++;
+                }
+
+                S4 defaultOffset = static_cast<S4>(
+                    (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                );
+                frame.programCounter += 4;
+
+                S4 npairs = static_cast<S4>(
+                    (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                    (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                );
+                frame.programCounter += 4;
+
+                S4 key = std::get<S4>(frame.pop());
+
+                S4 target = defaultOffset;
+                bool found = false;
+
+                for (S4 i = 0; i < npairs && !found; ++i)
+                {
+                    S4 match = static_cast<S4>(
+                        (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                    );
+                    frame.programCounter += 4;
+
+                    S4 offset = static_cast<S4>(
+                        (static_cast<U4>(bytecode[frame.programCounter]) << 24) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 1]) << 16) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 2]) << 8) |
+                        (static_cast<U4>(bytecode[frame.programCounter + 3]))
+                    );
+                    frame.programCounter += 4;
+
+                    if (match == key)
+                    {
+                        target = offset;
+                        found = true;
+                    }
+                }
+
+                frame.programCounter = opcodeStart + target;
+                break;
+            }
+
+
+
 
             case Opcode::IReturn:
                 return frame.pop();
