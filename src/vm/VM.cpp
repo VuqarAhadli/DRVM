@@ -2134,6 +2134,24 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::Goto:
+            {
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+                frame.programCounter = opcodeStart + brachOffset;
+
+                break;
+            }
+
 
 
             case Opcode::IReturn:
