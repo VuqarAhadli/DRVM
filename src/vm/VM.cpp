@@ -1927,6 +1927,156 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::IfICmpEq:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+
+                if (a == b)
+                {
+                    frame.programCounter = opcodeStart + brachOffset;
+                }
+
+
+                break;
+            }
+            case Opcode::IfICmpNe:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+
+                if (a != b)
+                {
+                    frame.programCounter = opcodeStart + brachOffset;
+                }
+
+
+                break;
+            }
+            case Opcode::IfICmpLt:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+
+                if (a < b)
+                {
+                    frame.programCounter = opcodeStart + brachOffset;
+                }
+
+
+                break;
+            }
+            case Opcode::IfICmpGe:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+
+                if (a >= b)
+                {
+                    frame.programCounter = opcodeStart + brachOffset;
+                }
+
+
+                break;
+            }
+            case Opcode::IfICmpGt:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+
+                if (a > b)
+                {
+                    frame.programCounter = opcodeStart + brachOffset;
+                }
+
+
+                break;
+            }
+            case Opcode::IfICmpLe:
+            {
+                S4 b = std::get<S4>(frame.pop());
+                S4 a = std::get<S4>(frame.pop());
+
+                U8 opcodeStart = frame.programCounter - 1;
+
+                auto branchByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto branchByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                S2 brachOffset = static_cast<S2>(branchByte1 << 8 | branchByte2);
+
+
+                if (a <= b)
+                {
+                    frame.programCounter = opcodeStart + brachOffset;
+                }
+
+
+                break;
+            }
 
 
 
