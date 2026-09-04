@@ -24,7 +24,7 @@
 
 bool isImplemented(Opcode opcode)
 {
-    if (static_cast<U1>(opcode) <= 177 )
+    if (static_cast<U1>(opcode) <= 179 )
     {
         return true;
     }

@@ -2327,37 +2327,51 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
             case Opcode::GetStatic:
             {
-                U2 index = static_cast<U2>((bytecode[frame.programCounter] << 8) | bytecode[frame.programCounter + 1]);
-                frame.programCounter += 2;
+                auto indexByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
 
-                auto* fieldref = classFile.getConstant<ConstantFieldref>(index);
-                auto* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
-                std::string fieldName = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex)->value;
+                auto indexByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
 
-                // Assumes the field belongs to the current class (classFile). yet...
+
+                U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                ConstantFieldref* fieldref = classFile.getConstant<ConstantFieldref>(index);
+                ConstantNameAndType* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
+                ConstantUtf8*  fieldNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
+                std::string name = fieldNameUTF8->value;
+
                 auto& fields = staticFields[&classFile];
-                auto iter = fields.find(fieldName);
+                auto iter = fields.find(name);
+
                 if (iter == fields.end())
                 {
-                    // JVM default is 0 for numerics.
-
-                    fields[fieldName] = Value(std::in_place_type<S4>, 0);
-                    iter = fields.find(fieldName);
+                    fields[name] = Value(std::in_place_type<S4>, 0);
+                    iter = fields.find(name);
                 }
+                
                 frame.push(iter->second);
                 break;
             }
 
             case Opcode::PutStatic:
             {
-                U2 index = static_cast<U2>((bytecode[frame.programCounter] << 8) | bytecode[frame.programCounter + 1]);
-                frame.programCounter += 2;
+                auto indexByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
 
-                auto* fieldref = classFile.getConstant<ConstantFieldref>(index);
-                auto* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
-                std::string fieldName = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex)->value;
+                auto indexByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
 
-                staticFields[&classFile][fieldName] = frame.pop();
+
+                U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                ConstantFieldref* fieldref = classFile.getConstant<ConstantFieldref>(index);
+                ConstantNameAndType* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
+                ConstantUtf8*  fieldNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
+                std::string name = fieldNameUTF8->value;
+
+                staticFields[&classFile][name] = frame.pop();
+                
                 break;
             }
 
