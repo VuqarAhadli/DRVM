@@ -2302,29 +2302,22 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             {
                 return std::get<S4>(frame.pop());
             }
-
             case Opcode::LReturn:
             {
                 return std::get<S8>(frame.pop());
             }
-
             case Opcode::FReturn:
             {
-
-            }
                 return std::get<F4>(frame.pop());
-
+            }
             case Opcode::DReturn:
             {
-
-            }
                 return std::get<F8>(frame.pop());
-
+            }
             case Opcode::AReturn:
             {
                 return frame.pop();   
             }
-
             case Opcode::Return:
             {
                 return Value();
