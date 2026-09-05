@@ -2406,6 +2406,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 auto* instance = static_cast<ObjectHeapObject*>(*objRef);
                 auto iter = instance->fields.find(name);
 
+
                 if (iter == instance->fields.end())
                 {
                     throw std::runtime_error("getfield: field \"" + name + "\" not found on instance" );
@@ -2449,6 +2450,34 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                         frame.push(db);
                         break;
                     }
+                    case ValueType::Boolean:
+                    {
+                        U1 b;
+                        std::memcpy(&b, slot.primitiveData.data(), sizeof(U1));
+                        frame.push(S4(b));
+                        break;
+                    }
+                    case ValueType::Byte:
+                    {
+                        S1 by;
+                        std::memcpy(&by, slot.primitiveData.data(), sizeof(S1));
+                        frame.push(S4(by));
+                        break;
+                    }
+                    case ValueType::Char:
+                    {
+                        U2 ch;
+                        std::memcpy(&ch, slot.primitiveData.data(), sizeof(U2));
+                        frame.push(S4(ch));
+                        break;
+                    }
+                    case ValueType::Short:
+                    {
+                        S2 sh;
+                        std::memcpy(&sh, slot.primitiveData.data(), sizeof(S2));
+                        frame.push(S4(sh));
+                        break;
+                    }
                     default:
                     {
                         throw std::runtime_error("getfield: unsupported or wrong field type");
@@ -2489,6 +2518,9 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 auto* instance = static_cast<ObjectHeapObject*>(*objRef);
                 FieldSlot slot;
 
+                auto* descriptorUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->descriptorIndex);
+                std::string descriptor = descriptorUTF8->value;
+
                 if (auto* ref = std::get_if<HeapObject*>(&val))
                 {
                     slot.type = ValueType::Reference;
@@ -2496,9 +2528,40 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 }
                 else if (auto* in = std::get_if<S4>(&val))
                 {
-                    slot.type = ValueType::Int;
-                    slot.primitiveData.resize(sizeof(S4));
-                    std::memcpy(slot.primitiveData.data(), in, sizeof(S4));
+                    S4 raw = *in;
+                    if (descriptor == "Z")
+                    {
+                        slot.type = ValueType::Boolean;
+                        U1 narrowed = static_cast<U1>(raw) & 0x1;
+                        slot.primitiveData.assign(1, narrowed);
+                    }
+                    else if (descriptor == "B")
+                    {
+                        slot.type = ValueType::Byte;
+                        S1 narrowed = static_cast<S1>(raw);
+                        slot.primitiveData.resize(sizeof(S1));
+                        std::memcpy(slot.primitiveData.data(), &narrowed, sizeof(S1));
+                    }
+                    else if (descriptor == "C")
+                    {
+                        slot.type = ValueType::Char;
+                        U2 narrowed = static_cast<U2>(raw);
+                        slot.primitiveData.resize(sizeof(U2));
+                        std::memcpy(slot.primitiveData.data(), &narrowed, sizeof(U2));
+                    }
+                    else if (descriptor == "S")
+                    {
+                        slot.type = ValueType::Short;
+                        S2 narrowed = static_cast<S2>(raw);
+                        slot.primitiveData.resize(sizeof(S2));
+                        std::memcpy(slot.primitiveData.data(), &narrowed, sizeof(S2));
+                    }
+                    else
+                    {
+                        slot.type = ValueType::Int;
+                        slot.primitiveData.resize(sizeof(S4));
+                        std::memcpy(slot.primitiveData.data(), &raw, sizeof(S4));
+                    }
                 }
                 else if (auto* l = std::get_if<S8>(&val))
                 {
