@@ -2375,6 +2375,44 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+
+            case Opcode::GetField:
+            {
+                auto indexByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto indexByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                ConstantFieldref* fieldref = classFile.getConstant<ConstantFieldref>(index);
+                ConstantNameAndType* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
+                ConstantUtf8*  fieldNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
+                std::string name = fieldNameUTF8->value;
+                
+
+                Value objRefVal = frame.pop();
+                HeapObject** objRef = std::get_if<HeapObject*>(&objRefVal);
+
+                if (!objRef || !*objRef)
+                {
+                    throw std::runtime_error("NullPointerException: getfield on null reference");
+                }
+                
+                auto* instance = static_cast<ObjectHeapObject*>(*objRef);
+                auto iter = instance->fields.find(name);
+
+                if (iter == instance->fields.end())
+                {
+                    throw std::runtime_error("getfield: field \"" + name + "\" not found on instance" );
+                }
+                
+                frame.push(iter->second);
+                break;
+            }
+
             default:
             {
                 std::ostringstream oss;
