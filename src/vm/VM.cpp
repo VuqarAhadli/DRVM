@@ -2374,8 +2374,6 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 
                 break;
             }
-
-
             case Opcode::GetField:
             {
                 auto indexByte1 = bytecode[frame.programCounter];
@@ -2400,6 +2398,10 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 {
                     throw std::runtime_error("NullPointerException: getfield on null reference");
                 }
+                if ((*objRef)->type != HeapType::Object)
+                {
+                    throw std::runtime_error("getfield: reference is not an object instance");
+                }
                 
                 auto* instance = static_cast<ObjectHeapObject*>(*objRef);
                 auto iter = instance->fields.find(name);
@@ -2409,9 +2411,124 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     throw std::runtime_error("getfield: field \"" + name + "\" not found on instance" );
                 }
                 
-                frame.push(iter->second);
+                FieldSlot& slot = iter->second;
+
+                switch (slot.type)
+                {
+                    case ValueType::Reference:
+                    {
+                        frame.push(slot.reference);
+                        break;
+                    }
+
+                    case ValueType::Int:
+                    {
+                        S4 in;
+                        std::memcpy(&in, slot.primitiveData.data(), sizeof(S4));
+                        frame.push(in);
+                        break;
+                    }
+                    case ValueType::Long:
+                    {
+                        S8 lo;
+                        std::memcpy(&lo, slot.primitiveData.data(), sizeof(S8));
+                        frame.push(lo);
+                        break;
+                    }
+                    case ValueType::Float:
+                    {
+                        F4 fl;
+                        std::memcpy(&fl, slot.primitiveData.data(), sizeof(F4));
+                        frame.push(fl);
+                        break;
+                    }
+                    case ValueType::Double:
+                    {
+                        F8 db;
+                        std::memcpy(&db, slot.primitiveData.data(), sizeof(F8));
+                        frame.push(db);
+                        break;
+                    }
+                    default:
+                    {
+                        throw std::runtime_error("getfield: unsupported or wrong field type");
+                    }
+                }
+
                 break;
             }
+            case Opcode::PutField:
+            {
+                auto indexByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                auto indexByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+
+                U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                ConstantFieldref* fieldref = classFile.getConstant<ConstantFieldref>(index);
+                ConstantNameAndType* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
+                ConstantUtf8*  fieldNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
+                std::string name = fieldNameUTF8->value;
+                
+                Value val = frame.pop();
+                Value objRefVal = frame.pop();
+                HeapObject** objRef = std::get_if<HeapObject*>(&objRefVal);
+
+                if (!objRef || !*objRef)
+                {
+                    throw std::runtime_error("NullPointerException: putfield on null reference");
+                }
+                if ((*objRef)->type != HeapType::Object)
+                {
+                    throw std::runtime_error("putfield: reference is not an object instance");
+                }
+                            
+                auto* instance = static_cast<ObjectHeapObject*>(*objRef);
+                FieldSlot slot;
+
+                if (auto* ref = std::get_if<HeapObject*>(&val))
+                {
+                    slot.type = ValueType::Reference;
+                    slot.reference = *ref;
+                }
+                else if (auto* in = std::get_if<S4>(&val))
+                {
+                    slot.type = ValueType::Int;
+                    slot.primitiveData.resize(sizeof(S4));
+                    std::memcpy(slot.primitiveData.data(), in, sizeof(S4));
+                }
+                else if (auto* l = std::get_if<S8>(&val))
+                {
+                    slot.type = ValueType::Long;
+                    slot.primitiveData.resize(sizeof(S8));
+                    std::memcpy(slot.primitiveData.data(), l, sizeof(S8));
+                }
+                else if (auto* f = std::get_if<F4>(&val))
+                {
+                    slot.type = ValueType::Float;
+                    slot.primitiveData.resize(sizeof(F4));
+                    std::memcpy(slot.primitiveData.data(), f, sizeof(F4));
+                }
+                else if (auto* d = std::get_if<F8>(&val))
+                {
+                    slot.type = ValueType::Double;
+                    slot.primitiveData.resize(sizeof(F8));
+                    std::memcpy(slot.primitiveData.data(), d, sizeof(F8));
+                }
+                else
+                {
+                    throw std::runtime_error("putfield: unsupported or wrong value type");
+                }
+
+                instance->fields[name] = slot;
+
+                break;
+            }
+
+
 
             default:
             {
