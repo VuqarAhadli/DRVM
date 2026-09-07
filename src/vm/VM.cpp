@@ -2700,6 +2700,10 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 }
 
                 ClassFile* targetClass = loader.loadClass(targetClassName);   
+                if (!targetClass)
+                {
+                    throw std::runtime_error("invokespecial: failed to load class \"" + targetClassName + "\"");
+                }
 
                 const MethodInfo* targetMethod = targetClass->findMethod(methodName, descriptor);
                 if (!targetMethod)
@@ -2726,7 +2730,8 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 FrameGuard invokedGuard(*this, invokedFrame);
                 Value result = execute(*targetClass, *targetCode);
 
-                if (descriptor.back() != 'V')
+                char returnType = descriptor.back();
+                if (returnType != 'V')
                 {
                     frame.push(result);
                 }
