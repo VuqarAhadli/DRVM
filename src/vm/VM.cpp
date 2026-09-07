@@ -2663,6 +2663,76 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::InvokeSpecial:
+            {
+                auto indexByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+                auto indexByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                ConstantMethodref* methodref = classFile.getConstant<ConstantMethodref>(index);
+                ConstantClass* classRef = classFile.getConstant<ConstantClass>(methodref->classIndex);
+                ConstantUtf8* classNameUTF8 = classFile.getConstant<ConstantUtf8>(classRef->nameIndex);
+                std::string targetClassName = classNameUTF8->value;
+
+                ConstantNameAndType* nameAndType = classFile.getConstant<ConstantNameAndType>(methodref->nameAndTypeIndex);
+                ConstantUtf8* methodNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
+                ConstantUtf8* descriptorUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->descriptorIndex);
+                std::string methodName = methodNameUTF8->value;
+                std::string descriptor = descriptorUTF8->value;
+
+                std::vector<char> paramTypes = parseParameterTypes(descriptor);
+
+                std::vector<Value> args(paramTypes.size());
+                for (U4 i = paramTypes.size(); i > 0;)
+                {
+                    --i;
+                    args[i] = frame.pop();
+                }
+
+                Value objRefVal = frame.pop();
+                HeapObject** objectRef = std::get_if<HeapObject*>(&objRefVal);
+                if (!objectRef || !*objectRef)
+                {
+                    throw std::runtime_error("NullPointerException: invokespecial on null reference");
+                }
+
+                ClassFile* targetClass = loader.loadClass(targetClassName);   
+
+                const MethodInfo* targetMethod = targetClass->findMethod(methodName, descriptor);
+                if (!targetMethod)
+                {
+                    throw std::runtime_error("invokespecial: method \"" + methodName + " " + descriptor + "\" not found");
+                }
+
+                const CodeAttribute* targetCode = targetClass->getCode(*targetMethod);
+                if (!targetCode)
+                {
+                    throw std::runtime_error("invokespecial: method \"" + methodName + "\" has no Code attribute");
+                }
+
+                Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
+                invokedFrame.setLocal(0, *objectRef);
+
+                U2 localSlot = 1;
+                for (U4 l = 0; l < paramTypes.size(); ++l)
+                {
+                    invokedFrame.locals[localSlot] = args[l];
+                    localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
+                }
+
+                FrameGuard invokedGuard(*this, invokedFrame);
+                Value result = execute(*targetClass, *targetCode);
+
+                if (descriptor.back() != 'V')
+                {
+                    frame.push(result);
+                }
+
+                break;
+            }
 
 
 
@@ -2676,6 +2746,9 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             }
         }
     }
+    
+    
+
 
     throw std::runtime_error("Fell off end of method without return");
 }
