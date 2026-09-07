@@ -172,3 +172,5 @@ private:
 
     BinaryReader reader;
 };
+
+std::vector<char> parseParameterTypes(const std::string& descriptor);

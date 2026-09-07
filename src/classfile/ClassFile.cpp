@@ -118,6 +118,44 @@ static U2 computeArgsSize(const std::string& descriptor, bool isStatic)
     return size;
 }
 
+std::vector<char> parseParameterTypes(const std::string& descriptor)
+{
+    std::vector<char> params;
+    std::size_t i = 1; /* skip initial ( */
+
+    while (i < descriptor.size() && descriptor[i] != ')')
+    {
+        char c = descriptor[i];
+
+        if (c == '[')
+        {
+            while (i < descriptor.size() && descriptor[i] == '[')
+                ++i;
+            if (i < descriptor.size() && descriptor[i] == 'L')
+            {
+                while (i < descriptor.size() && descriptor[i] != ';')
+                    ++i;
+            }
+            ++i;
+            params.push_back('[');   /* arrays are always 1 reference value */
+        }
+        else if (c == 'L')
+        {
+            while (i < descriptor.size() && descriptor[i] != ';')
+                ++i;
+            ++i;
+            params.push_back('L');
+        }
+        else
+        {
+            params.push_back(c);   // J, D, F, I, B, C, S, Z - each consumes 1 char
+            ++i;
+        }
+    }
+
+    return params;
+}
+
 inline ConstantTag readConstantTag(U1 value)
 {
     return static_cast<ConstantTag>(value);
