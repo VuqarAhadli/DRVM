@@ -2885,6 +2885,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::InvokeDynamic:
+            {
+                // Invokedynamic opcode is way too complicated to implement
+                // at this stage of the project. I will keep it unimplemented as
+                // the source files are from the J2ME era, which is 5 years prior
+                // to invokedynamic's release.
+                break;
+            }
+
+            
 
 
 
