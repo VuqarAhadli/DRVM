@@ -2894,7 +2894,44 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
-            
+            case Opcode::New:
+            {
+                U1 indexByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                U1 indexByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                ConstantClass* cls = classFile.getConstant<ConstantClass>(index);
+                ConstantUtf8* clsNameUTF8 = classFile.getConstant<ConstantUtf8>(cls->nameIndex);
+                std::string className = clsNameUTF8->value;
+                
+                ClassFile* targetClass = loader.loadClass(className);
+                if(!targetClass)
+                {
+                    throw std::runtime_error("new: failed to load class \"" + className + "\"");
+                }
+
+                if (heap.size() >= gcThreshold)
+                {
+                    collectGarbage();
+                }
+
+                heap.push_back(std::make_unique<ObjectHeapObject>(targetClass));
+                HeapObject* newClass = heap.back().get();
+
+                if(heap.size() >= gcThreshold)
+                {
+                    gcThreshold = heap.size() * 2;
+                }
+
+                frame.push(newClass);
+
+                break;
+            }
+
 
 
 
