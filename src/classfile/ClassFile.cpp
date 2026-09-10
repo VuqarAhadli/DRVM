@@ -205,6 +205,21 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
             U8 pc = 0;
             const auto& code = codeObj->code;
 
+            auto readS4 = [&code](U8& ind) -> S4
+            {
+                if (ind + 4 > code.size())
+                {
+                    throw std::runtime_error("Truncated variable-length opcode operand");
+                }
+
+                U4 value = (static_cast<U4>(code[ind]) << 24) |
+                           (static_cast<U4>(code[ind + 1]) << 16) |
+                           (static_cast<U4>(code[ind + 2]) << 8) |
+                           static_cast<U4>(code[ind + 3]);
+                ind += 4;
+                return static_cast<S4>(value);
+            };
+
             while (pc < code.size())
             {
                 Opcode op = static_cast<Opcode>(code[pc]);
@@ -228,6 +243,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << "0x"
                           << std::hex
                           << std::uppercase
+                          << std::right
                           << std::setw(2)
                           << std::setfill('0')
                           << static_cast<int>(code[pc])
@@ -240,6 +256,54 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << std::setw(16)
                           << (' ' + toString(op))
                           << ANSI_RESET;
+
+                if (op == Opcode::TableSwitch || op == Opcode::LookupSwitch)
+                {
+                    U8 ind = pc + 1;
+                    while (ind % 4 != 0)
+                    {
+                        if (ind >= code.size())
+                        {
+                            throw std::runtime_error("Truncated switch padding");
+                        }
+                        ++ind;
+                    }
+
+                    S4 defaultOffset = readS4(ind);
+                    if (op == Opcode::TableSwitch)
+                    {
+                        S4 low = readS4(ind);
+                        S4 high = readS4(ind);
+                        S8 entryCount = static_cast<S8>(high) - static_cast<S8>(low) + 1;
+
+                        if (entryCount < 0 || static_cast<U8>(entryCount) > (code.size() - ind) / 4)
+                        {
+                            throw std::runtime_error("Invalid or truncated tableswitch entries");
+                        }
+
+                        ind += static_cast<U8>(entryCount) * 4;
+                        std::cout << " default=" << (static_cast<S8>(pc) + defaultOffset)
+                                  << " low=" << low
+                                  << " high=" << high
+                                  << " entries=" << entryCount;
+                    }
+                    else
+                    {
+                        S4 pairCount = readS4(ind);
+                        if (pairCount < 0 || static_cast<U8>(pairCount) > (code.size() - ind) / 8)
+                        {
+                            throw std::runtime_error("Invalid or truncated lookupswitch pairs");
+                        }
+
+                        ind += static_cast<U8>(pairCount) * 8;
+                        std::cout << " default=" << (static_cast<S8>(pc) + defaultOffset)
+                                  << " pairs=" << pairCount;
+                    }
+
+                    std::cout << '\n';
+                    pc = ind;
+                    continue;
+                }
 
                 if (opSize > 0 && pc + opSize < code.size())
                 {
