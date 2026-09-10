@@ -2931,7 +2931,76 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 break;
             }
+            case Opcode::NewArray:
+            {
+                U1 arrayType = bytecode[frame.programCounter];
+                frame.programCounter++;
 
+                S4 count = std::get<S4>(frame.pop());
+                if (count < 0)
+                {
+                    throw std::runtime_error("NegativeArraySizeException: newarray count is negative");
+                }
+
+                ValueType elementType;
+                std::size_t elementSize;
+
+                switch (static_cast<ArrayType>(arrayType))
+                {
+                    case ArrayType::TBoolean:
+                        elementType = ValueType::Boolean;
+                        elementSize = sizeof(U1);
+                        break;
+                    case ArrayType::TChar:
+                        elementType = ValueType::Char;
+                        elementSize = sizeof(U2);
+                        break;
+                    case ArrayType::TFloat:
+                        elementType = ValueType::Float;
+                        elementSize = sizeof(F4);
+                        break;
+                    case ArrayType::TDouble:
+                        elementType = ValueType::Double;
+                        elementSize = sizeof(F8);
+                        break;
+                    case ArrayType::TByte:
+                        elementType = ValueType::Byte;
+                        elementSize = sizeof(S1);
+                        break;
+                    case ArrayType::TShort:
+                        elementType = ValueType::Short;
+                        elementSize = sizeof(S2);
+                        break;
+                    case ArrayType::TInt:
+                        elementType = ValueType::Int;
+                        elementSize = sizeof(S4);
+                        break;
+                    case ArrayType::TLong:
+                        elementType = ValueType::Long;
+                        elementSize = sizeof(S8);
+                        break;
+                    default:
+                        throw std::runtime_error("newarray: unrecognized atype " + std::to_string(static_cast<int>(arrayType)));
+                }
+
+                if (heap.size() >= gcThreshold)
+                {
+                    collectGarbage();
+                }
+
+                auto arrayObj = std::make_unique<ArrayHeapObject>(elementType,static_cast<U4>(count));
+                arrayObj->primitiveData.assign(static_cast<std::size_t>(count) * elementSize, 0);           
+
+                heap.push_back(std::move(arrayObj));
+                HeapObject* newArray = heap.back().get();
+
+                if (heap.size() >= gcThreshold)
+                {
+                    gcThreshold = heap.size() * 2;
+                }
+                frame.push(newArray);
+                break;
+            }
 
 
 

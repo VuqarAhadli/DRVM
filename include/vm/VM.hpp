@@ -115,14 +115,14 @@ struct Frame
 
 enum class ArrayType : U1
 {
-    T_BOOLEAN = 4,
-    T_CHAR    = 5,
-    T_FLOAT   = 6,
-    T_DOUBLE  = 7,
-    T_BYTE    = 8,
-    T_SHORT   = 9,
-    T_INT     = 10,
-    T_LONG    = 11
+    TBoolean = 4,
+    TChar    = 5,
+    TFloat   = 6,
+    TDouble  = 7,
+    TByte    = 8,
+    TShort   = 9,
+    TInt     = 10,
+    TLong    = 11
 };
 
 class VM
