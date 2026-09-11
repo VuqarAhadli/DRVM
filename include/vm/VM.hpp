@@ -27,6 +27,8 @@
 #include <unordered_map>
 #include <stdexcept>
 #include <algorithm>
+#include <cmath>
+#include <limits>
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
