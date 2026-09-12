@@ -3001,6 +3001,46 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 frame.push(newArray);
                 break;
             }
+            case Opcode::ANewArray:
+            {
+                U1 indexByte1 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                U1 indexByte2 = bytecode[frame.programCounter];
+                frame.programCounter++;
+
+                U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                ConstantClass* cls = classFile.getConstant<ConstantClass>(index);
+                ConstantUtf8* classNameUTF8 = classFile.getConstant<ConstantUtf8>(cls->nameIndex);
+                std::string className = classNameUTF8->value;
+
+                S4 count = std::get<S4>(frame.pop());
+                if (count < 0)
+                {
+                    throw std::runtime_error("NegativeArraySizeException: anewarray count is negative");
+                }
+
+                if (heap.size() >= gcThreshold)
+                {
+                    collectGarbage();
+                }
+
+                auto arrayObj = std::make_unique<ArrayHeapObject>(ValueType::Reference, static_cast<U4>(count));
+                arrayObj->referenceData.assign(static_cast<std::size_t>(count), nullptr);
+
+                heap.push_back(std::move(arrayObj));
+                HeapObject* newArray = heap.back().get();
+
+                if (heap.size() >= gcThreshold)
+                {
+                    gcThreshold = heap.size() * 2;
+                }
+
+                frame.push(newArray);
+                
+                break;
+            }
 
 
 
@@ -3014,6 +3054,8 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
             }
         }
     }
+
+
     
     
 
