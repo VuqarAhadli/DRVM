@@ -152,6 +152,7 @@ private:
     std::vector<Frame*> callStack;
 
     HeapObject* createMultiArray(const std::vector<S4>& dimSizes, std::size_t dimIndex, ValueType leafType, std::size_t totalDimensions);
+    HeapObject* allocateRuntimeConstant(ConstantTag tag, std::string value);
 
     bool isSubclassOf(const std::string& className, const std::string& targetClassName);
     ClassFile* resolveFieldOwner(ClassFile* startClass, const std::string& fieldName);

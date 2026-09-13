@@ -32,7 +32,8 @@ enum class HeapType : U1
 {
     String,
     Array,
-    Object
+    Object,
+    Constant
 };
 
 class HeapObject
@@ -61,6 +62,22 @@ public:
         : HeapObject(HeapType::String),
           value(std::move(value))
     {}
+    void trace(std::vector<HeapObject*>&) const override {}
+};
+
+class ConstantHeapObject : public HeapObject
+{
+public:
+    ConstantTag constantTag;
+    std::string value;
+
+    ConstantHeapObject(ConstantTag constantTag, std::string value)
+        : HeapObject(HeapType::Constant),
+          constantTag(constantTag),
+          value(std::move(value))
+    {
+    }
+
     void trace(std::vector<HeapObject*>&) const override {}
 };
 

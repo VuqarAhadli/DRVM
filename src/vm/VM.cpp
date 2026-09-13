@@ -178,6 +178,24 @@ HeapObject* VM::allocateString(const std::string& utf8)
     return heap.back().get();
 }
 
+HeapObject* VM::allocateRuntimeConstant(ConstantTag tag, std::string value)
+{
+    if (heap.size() >= gcThreshold)
+    {
+        collectGarbage();
+    }
+
+    heap.push_back(std::make_unique<ConstantHeapObject>(tag, std::move(value)));
+    HeapObject* constant = heap.back().get();
+
+    if (heap.size() >= gcThreshold)
+    {
+        gcThreshold = heap.size() * 2;
+    }
+
+    return constant;
+}
+
 Value VM::invoke(ClassFile& classFile, const MethodInfo& method)
 {
     const CodeAttribute* code = classFile.getCode(method);
@@ -407,6 +425,62 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
     FrameGuard guard(*this, frame);
     const std::vector<U1>& bytecode = code.code;
 
+    auto loadConstant = [this, &classFile](U2 index) -> Value
+    {
+        CPInfo* entry = classFile.getConstant<CPInfo>(index);
+
+        switch (entry->tag)
+        {
+            case ConstantTag::Integer:
+                return classFile.getConstant<ConstantInteger>(index)->value;
+            case ConstantTag::Float:
+                return classFile.getConstant<ConstantFloat>(index)->value;
+            case ConstantTag::Long:
+                return classFile.getConstant<ConstantLong>(index)->value;
+            case ConstantTag::Double:
+                return classFile.getConstant<ConstantDouble>(index)->value;
+            case ConstantTag::String:
+            {
+                auto* stringConstant = classFile.getConstant<ConstantString>(index);
+                auto* stringValue = classFile.getConstant<ConstantUtf8>(stringConstant->stringIndex);
+                return allocateString(stringValue->value);
+            }
+            case ConstantTag::Class:
+            {
+                auto* classConstant = classFile.getConstant<ConstantClass>(index);
+                auto* className = classFile.getConstant<ConstantUtf8>(classConstant->nameIndex);
+                return allocateRuntimeConstant(ConstantTag::Class, className->value);
+            }
+            case ConstantTag::MethodType:
+            {
+                auto* methodType = classFile.getConstant<ConstantMethodType>(index);
+                auto* descriptor = classFile.getConstant<ConstantUtf8>(methodType->descriptorIndex);
+                return allocateRuntimeConstant(ConstantTag::MethodType, descriptor->value);
+            }
+            case ConstantTag::MethodHandle:
+            {
+                auto* methodHandle = classFile.getConstant<ConstantMethodHandle>(index);
+                return allocateRuntimeConstant(
+                    ConstantTag::MethodHandle,
+                    "reference_kind=" + std::to_string(methodHandle->referenceKind) +
+                    ",reference_index=" + std::to_string(methodHandle->referenceIndex));
+            }
+            case ConstantTag::Dynamic:
+            {
+                auto* dynamic = classFile.getConstant<ConstantDynamic>(index);
+                auto* nameAndType = classFile.getConstant<ConstantNameAndType>(dynamic->nameAndTypeIndex);
+                auto* name = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
+                auto* descriptor = classFile.getConstant<ConstantUtf8>(nameAndType->descriptorIndex);
+                return allocateRuntimeConstant(
+                    ConstantTag::Dynamic,
+                    "bootstrap=" + std::to_string(dynamic->bootstrapMethodAttrIndex) +
+                    ",name=" + name->value + ",descriptor=" + descriptor->value);
+            }
+            default:
+                throw std::runtime_error("constant pool entry is not loadable by ldc");
+        }
+    };
+
     while (frame.programCounter < bytecode.size())
     {
         U4 instructionStart = frame.programCounter;
@@ -490,26 +564,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 {
                     U1 index = bytecode[frame.programCounter];
                     frame.programCounter++;
-                    CPInfo* entry = classFile.getConstant<CPInfo>(index);
-                    if (entry->tag == ConstantTag::Integer)
-                    {
-                        frame.push(classFile.getConstant<ConstantInteger>(index)->value);
-                    }
-                    else if (entry->tag == ConstantTag::Float)
-                    {
-                        frame.push(classFile.getConstant<ConstantFloat>(index)->value);
-                    }
-                    else if (entry->tag == ConstantTag::String)
-                    {
-                        auto* stringConst = classFile.getConstant<ConstantString>(index);
-                        auto* utf8Const = classFile.getConstant<ConstantUtf8>(stringConst->stringIndex);
-                        HeapObject* stringObj = allocateString(utf8Const->value);
-                        frame.push(stringObj);
-                    }
-                    else
-                    {
-                        throw std::runtime_error("ldc: unexpected constant pool tag");
-                    }
+                    frame.push(loadConstant(index));
                     break;
                 }
 
@@ -518,19 +573,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     U2 index = static_cast<U2>((bytecode[frame.programCounter] << 8) | bytecode[frame.programCounter + 1]);
                     frame.programCounter += 2;
 
-                    CPInfo* entry = classFile.getConstant<CPInfo>(index);
-                    if (entry->tag == ConstantTag::Integer)
-                    {
-                        frame.push(classFile.getConstant<ConstantInteger>(index)->value);
-                    }
-                    else if (entry->tag == ConstantTag::Float)
-                    {
-                        frame.push(classFile.getConstant<ConstantFloat>(index)->value);
-                    }
-                    else
-                    {
-                        throw std::runtime_error("ldc_w: unexpected/unsupported constant pool tag");
-                    }
+                    frame.push(loadConstant(index));
                     break;
                 }
 
@@ -548,9 +591,13 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     {
                         frame.push(classFile.getConstant<ConstantDouble>(index)->value);
                     }
+                    else if (entry->tag == ConstantTag::Dynamic)
+                    {
+                        frame.push(loadConstant(index));
+                    }
                     else
                     {
-                        throw std::runtime_error("ldc_2w: unexpected/unsupported constant pool tag");
+                        throw std::runtime_error("ldc2_w: unexpected/unsupported constant pool tag");
                     }
                     break;
                 }
