@@ -3231,6 +3231,58 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     };
                 }
 
+                case Opcode::CheckCast:
+                {
+                    U1 indexByte1 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+                    U1 indexByte2 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                    ConstantClass* cls = classFile.getConstant<ConstantClass>(index);
+                    std::string targetClassName = classFile.getConstant<ConstantUtf8>(cls->nameIndex)->value;
+
+                    Value objRefVal = frame.pop();
+                    HeapObject** ref = std::get_if<HeapObject*>(&objRefVal);
+
+                    if (!ref || !*ref)
+                    {
+                        frame.push(nullptr);   // checkcast on null always succeeds, and pushes null to the stack
+                        break;
+                    }
+                    if ((*ref)->type != HeapType::Object || !isSubclassOf(static_cast<ObjectHeapObject*>(*ref)->javaClass->getClassName(), targetClassName))
+                    {
+                        throw std::runtime_error("ClassCastException: cannot cast to \"" + targetClassName + "\"");
+                    }
+
+                    frame.push(*ref);
+                    break;
+                }
+
+                case Opcode::MonitorEnter:
+                {
+                    Value objRefVal = frame.pop();
+                    HeapObject** ref = std::get_if<HeapObject*>(&objRefVal);
+                    if (!ref || !*ref)
+                    {
+                        throw std::runtime_error("NullPointerException: monitorenter on null reference");
+                    }
+                    // single threaded interpreter. Basically, no-op
+                    break;
+                }
+                case Opcode::MonitorExit:
+                {
+                    Value objRefVal = frame.pop();
+                    HeapObject** ref = std::get_if<HeapObject*>(&objRefVal);
+                    if (!ref || !*ref)
+                    {
+                        throw std::runtime_error("NullPointerException: monitorexit on null reference");
+                    }
+                    // single threaded interpreter. Basically, no-op
+                    break;
+                }
+
 
 
                 default:
