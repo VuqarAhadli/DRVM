@@ -149,6 +149,10 @@ private:
     ClassLoader& loader;
     std::vector<std::unique_ptr<HeapObject>> heap;
     std::vector<Frame*> callStack;
+
+    bool isSubclassOf(const std::string& className, const std::string& targetClassName);
+    ClassFile* resolveFieldOwner(ClassFile* startClass, const std::string& fieldName);
+    ClassFile* resolveMethodOwner(ClassFile* startClass, const std::string& name, const std::string& descriptor, const MethodInfo** outMethod);
     
 };
 

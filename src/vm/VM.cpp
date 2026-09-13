@@ -60,6 +60,127 @@ Value VM::invoke(ClassFile& classFile, const MethodInfo& method)
     return execute(classFile, *code);
 }
 
+
+
+bool VM::isSubclassOf(const std::string& className, const std::string& targetClassName)
+{
+    if (className == targetClassName)
+    {
+        return true;
+    }
+
+    ClassFile* current = nullptr;
+    try
+    {
+        current = loader.loadClass(className);
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    while (current)
+    {
+        U2 superIndex = current->getSuperClass();
+        if (superIndex == 0)
+        {
+            break;   // reached java/lang/Object | default
+        }
+
+        ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
+        std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
+
+        if (superName == targetClassName)
+        {
+            return true;
+        }
+
+        try
+        {
+            current = loader.loadClass(superName);
+        }
+        catch (...)
+        {
+            return false;
+        }
+    }
+
+    return false;
+}
+
+
+ClassFile* VM::resolveFieldOwner(ClassFile* startClass, const std::string& fieldName)
+{
+    ClassFile* current = startClass;
+
+    while (current)
+    {
+        for (const auto& field : current->getFields())
+        {
+            if (current->getConstant<ConstantUtf8>(field.nameIndex)->value == fieldName)
+            {
+                return current;
+            }
+        }
+
+        U2 superIndex = current->getSuperClass();
+        if (superIndex == 0)
+        {
+            break;
+        }
+
+        ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
+        std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
+
+        try
+        {
+            current = loader.loadClass(superName);
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+ClassFile* VM::resolveMethodOwner(ClassFile* startClass, const std::string& name,
+                                   const std::string& descriptor, const MethodInfo** outMethod)
+{
+    ClassFile* current = startClass;
+
+    while (current)
+    {
+        if (const MethodInfo* m = current->findMethod(name, descriptor))
+        {
+            *outMethod = m;
+            return current;
+        }
+
+        U2 superIndex = current->getSuperClass();
+        if (superIndex == 0)
+        {
+            break;
+        }
+
+        ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
+        std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
+
+        try
+        {
+            current = loader.loadClass(superName);
+        }
+        catch (...)
+        {
+            return nullptr;
+        }
+    }
+
+    return nullptr;
+}
+
+
 Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 {
     Frame frame(code.maxLocals, code.maxStack);
@@ -2344,7 +2465,13 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     ConstantUtf8*  fieldNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
                     std::string name = fieldNameUTF8->value;
 
-                    auto& fields = staticFields[&classFile];
+                    ClassFile* owner = resolveFieldOwner(&classFile, name);
+                    if (!owner)
+                    {
+                        throw std::runtime_error("getstatic: field \"" + name + "\" not found in class hierarchy");
+                    }
+
+                    auto& fields = staticFields[owner];
                     auto iter = fields.find(name);
 
                     if (iter == fields.end())
@@ -2372,8 +2499,15 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     ConstantNameAndType* nameAndType = classFile.getConstant<ConstantNameAndType>(fieldref->nameAndTypeIndex);
                     ConstantUtf8*  fieldNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
                     std::string name = fieldNameUTF8->value;
+                    
+                    ClassFile* owner = resolveFieldOwner(&classFile, name);
+                    if (!owner)
+                    {
+                        throw std::runtime_error("putstatic: field \"" + name + "\" not found in class hierarchy");
+                    }
 
-                    staticFields[&classFile][name] = frame.pop();
+
+                    staticFields[owner][name] = frame.pop();
                     
                     break;
                 }
@@ -2629,9 +2763,13 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     }
 
                     ObjectHeapObject* instance = static_cast<ObjectHeapObject*>(*objectRef);
-                    ClassFile* targetClass = instance->javaClass;
-
-                    const MethodInfo* targetMethod = targetClass->findMethod(methodName, descriptor);
+                    
+                    const MethodInfo* targetMethod = nullptr;
+                    ClassFile* targetClass = resolveMethodOwner(instance->javaClass, methodName, descriptor, &targetMethod);
+                    if (!targetClass)
+                    {
+                        throw std::runtime_error("invokevirtual: method \"" + methodName + " " + descriptor + "\" not found");
+                    }
                     if (!targetMethod)
                     {
                         throw std::runtime_error("invokevirtual: method \"" + methodName + " " + descriptor + "\" not found");
@@ -2702,14 +2840,15 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                         throw std::runtime_error("NullPointerException: invokespecial on null reference");
                     }
 
-                    ClassFile* targetClass = loader.loadClass(targetClassName);   
-                    if (!targetClass)
+                    ClassFile* namedClass = loader.loadClass(targetClassName);
+                    if (!namedClass)
                     {
                         throw std::runtime_error("invokespecial: failed to load class \"" + targetClassName + "\"");
                     }
 
-                    const MethodInfo* targetMethod = targetClass->findMethod(methodName, descriptor);
-                    if (!targetMethod)
+                    const MethodInfo* targetMethod = nullptr;
+                    ClassFile* targetClass = resolveMethodOwner(namedClass, methodName, descriptor, &targetMethod);
+                    if (!targetClass)
                     {
                         throw std::runtime_error("invokespecial: method \"" + methodName + " " + descriptor + "\" not found");
                     }
@@ -2770,14 +2909,15 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                         args[i] = frame.pop();
                     }
 
-                    ClassFile* targetClass = loader.loadClass(targetClassName);
-                    if (!targetClass)
+                    ClassFile* namedClass = loader.loadClass(targetClassName);
+                    if (!namedClass)
                     {
                         throw std::runtime_error("invokestatic: failed to load class \"" + targetClassName + "\"");
                     }
 
-                    const MethodInfo* targetMethod = targetClass->findMethod(methodName, descriptor);
-                    if (!targetMethod)
+                    const MethodInfo* targetMethod = nullptr;
+                    ClassFile* targetClass = resolveMethodOwner(namedClass, methodName, descriptor, &targetMethod);
+                    if (!targetClass)
                     {
                         throw std::runtime_error("invokestatic: method \"" + methodName + " " + descriptor + "\" not found");
                     }
@@ -2854,10 +2994,9 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     }
 
                     ObjectHeapObject* instance = static_cast<ObjectHeapObject*>(*objectRef);
-                    ClassFile* targetClass = instance->javaClass;
-
-                    const MethodInfo* targetMethod = targetClass->findMethod(methodName, descriptor);
-                    if (!targetMethod)
+                    const MethodInfo* targetMethod = nullptr;
+                    ClassFile* targetClass = resolveMethodOwner(instance->javaClass, methodName, descriptor, &targetMethod);
+                    if (!targetClass)
                     {
                         throw std::runtime_error("invokeinterface: method \"" + methodName + " " + descriptor + "\" not found");
                     }
@@ -3127,8 +3266,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     ConstantUtf8* catchClassNameUTF8 = classFile.getConstant<ConstantUtf8>(catchClassRef->nameIndex);
                     std::string catchClassName = catchClassNameUTF8->value;
 
-                    // NOTE: exact match only for now 
-                    typeMatches = (catchClassName == ex.className);
+                    typeMatches = isSubclassOf(ex.className, catchClassName);
                 }
 
                 if (typeMatches)
