@@ -106,10 +106,38 @@ public:
         return result;
     }
 
+    template<typename T>
+    T* getConstant(U2 index) const
+    {
+        auto* entry = const_cast<CPInfo*>(constantPool.at(index).get());
+        T* result = dynamic_cast<T*>(entry);
+        if (!result)
+        {
+            throw std::runtime_error("Constant pool entry #" + std::to_string(index) +
+                                    " is not of an expected type");
+        }
+        return result;
+    }
+
     std::string getClassName()
     {
         auto* cls = getConstant<ConstantClass>(thisClass);
         return getConstant<ConstantUtf8>(cls->nameIndex)->value;
+    }
+
+    std::vector<std::string> getInterfaceNames() const
+    {
+        std::vector<std::string> interfaceNames;
+        interfaceNames.reserve(interfaces.size());
+
+        for (U2 interfaceIndex : interfaces)
+        {
+            const auto* interfaceClass = getConstant<ConstantClass>(interfaceIndex);
+            const auto* interfaceName = getConstant<ConstantUtf8>(interfaceClass->nameIndex);
+            interfaceNames.push_back(interfaceName->value);
+        }
+
+        return interfaceNames;
     }
 
     const MethodInfo* findMethod(const std::string& name, const std::string& descriptor)

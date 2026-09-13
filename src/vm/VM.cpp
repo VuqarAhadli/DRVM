@@ -24,12 +24,140 @@
 #include <iostream>
 #include <sstream>
 #include <variant>
+#include <unordered_set>
 
+static void parseArrayDescriptor(const std::string& desc, int& dimensions, ValueType& leafType)
+{
+    dimensions = 0;
+    std::size_t i = 0;
+    while (i < desc.size() && desc[i] == '[')
+    {
+        ++dimensions;
+        ++i;
+    }
 
+    switch (desc[i])
+    {
+        case 'Z': 
+            leafType = ValueType::Boolean; 
+            break;
+        case 'B': 
+            leafType = ValueType::Byte; 
+            break;
+        case 'C': 
+            leafType = ValueType::Char; 
+            break;
+        case 'S': 
+            leafType = ValueType::Short; 
+            break;
+        case 'I': 
+            leafType = ValueType::Int; 
+            break;
+        case 'J': 
+            leafType = ValueType::Long; 
+            break;
+        case 'F': 
+            leafType = ValueType::Float; 
+            break;
+        case 'D': 
+            leafType = ValueType::Double; 
+            break;
+        case 'L': 
+            leafType = ValueType::Reference; 
+            break;
+        default:
+            throw std::runtime_error("multianewarray: unrecognized descriptor \"" + desc + "\"");
+    }
+}
 
 VM::VM(ClassLoader& loader)
     : loader(loader)
 {
+}
+
+HeapObject* VM::createMultiArray(const std::vector<S4>& dimSizes, std::size_t dimIndex, ValueType leafType, std::size_t totalDimensions)
+{
+    if (dimIndex >= dimSizes.size())
+    {
+        return nullptr;
+    }
+
+    S4 count = dimSizes[dimIndex];
+    if (count < 0)
+    {
+        throw std::runtime_error("NegativeArraySizeException: multianewarray dimension is negative");
+    }
+
+    if (heap.size() >= gcThreshold)
+    {
+        collectGarbage();
+    }
+
+    bool isLeafDimension = (dimIndex + 1 == totalDimensions);
+
+    if (isLeafDimension && leafType != ValueType::Reference)
+    {
+        std::size_t elementSize;
+        switch (leafType)
+        {
+            case ValueType::Boolean: 
+                elementSize = sizeof(U1); 
+                break;
+            case ValueType::Byte: 
+                elementSize = sizeof(S1); 
+                break;
+            case ValueType::Char: 
+                elementSize = sizeof(U2); 
+                break;
+            case ValueType::Short: 
+                elementSize = sizeof(S2); 
+                break;
+            case ValueType::Int:
+                elementSize = sizeof(S4); 
+                break;
+            case ValueType::Long:
+                elementSize = sizeof(S8); 
+                break;
+            case ValueType::Float:
+                elementSize = sizeof(F4); 
+                break;
+            case ValueType::Double: 
+                elementSize = sizeof(F8); 
+                break;
+            default:
+                elementSize = 0; 
+                break;
+        }
+
+        auto arrayObj = std::make_unique<ArrayHeapObject>(leafType, static_cast<U4>(count));
+        arrayObj->primitiveData.assign(static_cast<std::size_t>(count) * elementSize, 0);
+        heap.push_back(std::move(arrayObj));
+    }
+    else
+    {
+        auto arrayObj = std::make_unique<ArrayHeapObject>(ValueType::Reference, static_cast<U4>(count));
+        arrayObj->referenceData.assign(static_cast<std::size_t>(count), nullptr);
+        HeapObject* thisLevel = arrayObj.get();
+        heap.push_back(std::move(arrayObj));
+
+        if (dimIndex + 1 < dimSizes.size())
+        {
+            auto* thisArray = static_cast<ArrayHeapObject*>(thisLevel);
+            for (S4 k = 0; k < count; ++k)
+            {
+                thisArray->referenceData[static_cast<std::size_t>(k)] =
+                    createMultiArray(dimSizes, dimIndex + 1, leafType, totalDimensions);
+            }
+        }
+        return thisLevel;
+    }
+
+    HeapObject* result = heap.back().get();
+    if (heap.size() >= gcThreshold)
+    {
+        gcThreshold = heap.size() * 2;
+    }
+    return result;
 }
 
 HeapObject* VM::allocateString(const std::string& utf8)
@@ -69,39 +197,69 @@ bool VM::isSubclassOf(const std::string& className, const std::string& targetCla
         return true;
     }
 
-    ClassFile* current = nullptr;
-    try
+    if (className == "java/lang/String")
     {
-        current = loader.loadClass(className);
-    }
-    catch (...)
-    {
-        return false;
+        if (targetClassName == "java/lang/Object" || targetClassName == "java/lang/String" || targetClassName == "java/io/Serializable" || targetClassName == "java/lang/Comparable")
+        {
+            return true;
+        }
     }
 
-    while (current)
+    std::vector<std::string> pending{className};
+    std::unordered_set<std::string> visited;
+
+    while (!pending.empty())
     {
-        U2 superIndex = current->getSuperClass();
-        if (superIndex == 0)
+        std::string currentName = pending.back();
+        pending.pop_back();
+
+        if (!visited.insert(currentName).second)
         {
-            break;   // reached java/lang/Object | default
+            continue;
         }
 
-        ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
-        std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
-
-        if (superName == targetClassName)
+        if (currentName == "java/lang/Object" && targetClassName == "java/lang/Object")
         {
             return true;
         }
 
+        ClassFile* current = nullptr;
         try
         {
-            current = loader.loadClass(superName);
+            current = loader.loadClass(currentName);
         }
         catch (...)
         {
-            return false;
+            current = nullptr;
+        }
+
+        if (!current)
+        {
+            continue;
+        }
+
+        U2 superIndex = current->getSuperClass();
+        if (superIndex != 0)
+        {
+            ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
+            std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
+
+            if (superName == targetClassName)
+            {
+                return true;
+            }
+
+            pending.push_back(superName);
+        }
+
+        for (const std::string& interfaceName : current->getInterfaceNames())
+        {
+            if (interfaceName == targetClassName)
+            {
+                return true;
+            }
+
+            pending.push_back(interfaceName);
         }
     }
 
@@ -111,10 +269,29 @@ bool VM::isSubclassOf(const std::string& className, const std::string& targetCla
 
 ClassFile* VM::resolveFieldOwner(ClassFile* startClass, const std::string& fieldName)
 {
-    ClassFile* current = startClass;
-
-    while (current)
+    if (!startClass)
     {
+        return nullptr;
+    }
+
+    std::vector<ClassFile*> pending{startClass};
+    std::unordered_set<std::string> visited;
+
+    while (!pending.empty())
+    {
+        ClassFile* current = pending.back();
+        pending.pop_back();
+
+        if (!current)
+        {
+            continue;
+        }
+
+        if (!visited.insert(current->getClassName()).second)
+        {
+            continue;
+        }
+
         for (const auto& field : current->getFields())
         {
             if (current->getConstant<ConstantUtf8>(field.nameIndex)->value == fieldName)
@@ -124,21 +301,29 @@ ClassFile* VM::resolveFieldOwner(ClassFile* startClass, const std::string& field
         }
 
         U2 superIndex = current->getSuperClass();
-        if (superIndex == 0)
+        if (superIndex != 0)
         {
-            break;
+            ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
+            std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
+
+            try
+            {
+                pending.push_back(loader.loadClass(superName));
+            }
+            catch (...)
+            {
+            }
         }
 
-        ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
-        std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
-
-        try
+        for (const std::string& interfaceName : current->getInterfaceNames())
         {
-            current = loader.loadClass(superName);
-        }
-        catch (...)
-        {
-            return nullptr;
+            try
+            {
+                pending.push_back(loader.loadClass(interfaceName));
+            }
+            catch (...)
+            {
+            }
         }
     }
 
@@ -148,32 +333,67 @@ ClassFile* VM::resolveFieldOwner(ClassFile* startClass, const std::string& field
 ClassFile* VM::resolveMethodOwner(ClassFile* startClass, const std::string& name,
                                    const std::string& descriptor, const MethodInfo** outMethod)
 {
-    ClassFile* current = startClass;
-
-    while (current)
+    if (!startClass)
     {
+        return nullptr;
+    }
+
+    if (outMethod)
+    {
+        *outMethod = nullptr;
+    }
+
+    std::vector<ClassFile*> pending{startClass};
+    std::unordered_set<std::string> visited;
+
+    while (!pending.empty())
+    {
+        ClassFile* current = pending.back();
+        pending.pop_back();
+
+        if (!current)
+        {
+            continue;
+        }
+
+        if (!visited.insert(current->getClassName()).second)
+        {
+            continue;
+        }
+
         if (const MethodInfo* m = current->findMethod(name, descriptor))
         {
-            *outMethod = m;
+            if (outMethod)
+            {
+                *outMethod = m;
+            }
             return current;
         }
 
         U2 superIndex = current->getSuperClass();
-        if (superIndex == 0)
+        if (superIndex != 0)
         {
-            break;
+            ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
+            std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
+
+            try
+            {
+                pending.push_back(loader.loadClass(superName));
+            }
+            catch (...)
+            {
+            }
         }
 
-        ConstantClass* superRef = current->getConstant<ConstantClass>(superIndex);
-        std::string superName = current->getConstant<ConstantUtf8>(superRef->nameIndex)->value;
-
-        try
+        for (const std::string& interfaceName : current->getInterfaceNames())
         {
-            current = loader.loadClass(superName);
-        }
-        catch (...)
-        {
-            return nullptr;
+            try
+            {
+                pending.push_back(loader.loadClass(interfaceName));
+            }
+            catch (...)
+            {
+            }
         }
     }
 
@@ -3251,6 +3471,33 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                         frame.push(nullptr);   // checkcast on null always succeeds, and pushes null to the stack
                         break;
                     }
+                    if ((*ref)->type == HeapType::Array)
+                    {
+                        if (targetClassName == "java/lang/Object" ||
+                            targetClassName == "java/io/Serializable" ||
+                            targetClassName == "java/lang/Cloneable")
+                        {
+                            frame.push(*ref);
+                            break;
+                        }
+
+                        throw std::runtime_error("ClassCastException: cannot cast to \"" + targetClassName + "\"");
+                    }
+
+                    if ((*ref)->type == HeapType::String)
+                    {
+                        if (targetClassName == "java/lang/String" ||
+                            targetClassName == "java/lang/Object" ||
+                            targetClassName == "java/io/Serializable" ||
+                            targetClassName == "java/lang/Comparable")
+                        {
+                            frame.push(*ref);
+                            break;
+                        }
+
+                        throw std::runtime_error("ClassCastException: cannot cast to \"" + targetClassName + "\"");
+                    }
+
                     if ((*ref)->type != HeapType::Object || !isSubclassOf(static_cast<ObjectHeapObject*>(*ref)->javaClass->getClassName(), targetClassName))
                     {
                         throw std::runtime_error("ClassCastException: cannot cast to \"" + targetClassName + "\"");
@@ -3259,6 +3506,56 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     frame.push(*ref);
                     break;
                 }
+
+                case Opcode::InstanceOf:
+                {
+                    U1 indexByte1 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+                    U1 indexByte2 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+                    U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                    ConstantClass* cls = classFile.getConstant<ConstantClass>(index);
+                    std::string targetClassName = classFile.getConstant<ConstantUtf8>(cls->nameIndex)->value;
+
+                    Value objRefVal = frame.pop();
+                    HeapObject** ref = std::get_if<HeapObject*>(&objRefVal);
+
+                    if (!ref || !*ref)
+                    {
+                        frame.push(S4(0));   // instanceof on null is always false
+                        break;
+                    }
+                    if ((*ref)->type != HeapType::Object)
+                    {
+                        if ((*ref)->type == HeapType::Array)
+                        {
+                            frame.push(S4(targetClassName == "java/lang/Object" ||
+                                          targetClassName == "java/io/Serializable" ||
+                                          targetClassName == "java/lang/Cloneable" ? 1 : 0));
+                            break;
+                        }
+
+                        if ((*ref)->type == HeapType::String)
+                        {
+                            frame.push(S4(targetClassName == "java/lang/String" ||
+                                          targetClassName == "java/lang/Object" ||
+                                          targetClassName == "java/io/Serializable" ||
+                                          targetClassName == "java/lang/Comparable" ? 1 : 0));
+                            break;
+                        }
+
+                        frame.push(S4(0));   
+                        break;
+                    }
+
+                    auto* instance = static_cast<ObjectHeapObject*>(*ref);
+                    std::string actualClassName = instance->javaClass->getClassName();
+
+                    frame.push(S4(isSubclassOf(actualClassName, targetClassName) ? 1 : 0));
+                    break;
+                }
+
 
                 case Opcode::MonitorEnter:
                 {
@@ -3280,6 +3577,48 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                         throw std::runtime_error("NullPointerException: monitorexit on null reference");
                     }
                     // single threaded interpreter. Basically, no-op
+                    break;
+                }
+
+                case Opcode::Wide:
+                {
+                    
+                    break;
+                }
+
+                case Opcode::MultiANewArray:
+                {
+                    U1 indexByte1 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+                    U1 indexByte2 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    U1 dimensionsOperand = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    U2 index = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                    ConstantClass* cls = classFile.getConstant<ConstantClass>(index);
+                    std::string arrayDescriptor = classFile.getConstant<ConstantUtf8>(cls->nameIndex)->value;
+
+                    int totalDimensions;
+                    ValueType leafType;
+                    parseArrayDescriptor(arrayDescriptor, totalDimensions, leafType);
+
+                    if (dimensionsOperand == 0 || dimensionsOperand > totalDimensions)
+                    {
+                        throw std::runtime_error("multianewarray: invalid dimensions operand");
+                    }
+
+                    std::vector<S4> dimSizes(dimensionsOperand);
+                    for (U1 d = dimensionsOperand; d > 0; )
+                    {
+                        --d;
+                        dimSizes[d] = std::get<S4>(frame.pop());
+                    }
+
+                    HeapObject* result = createMultiArray(dimSizes, 0, leafType, totalDimensions);
+                    frame.push(result);
                     break;
                 }
 
