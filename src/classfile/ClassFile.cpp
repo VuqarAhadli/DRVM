@@ -256,7 +256,62 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << std::setw(16)
                           << (' ' + toString(op))
                           << ANSI_RESET;
+                // 3 or 5 operands for wide
+                if (op == Opcode::Wide)
+                {
+                    U8 ind = pc + 1;
+                    if (ind >= code.size())
+                    {
+                        throw std::runtime_error("Truncated wide instruction");
+                    }
 
+                    Opcode modifiedOpcode = static_cast<Opcode>(code[ind]);
+                    bool isIInc = modifiedOpcode == Opcode::IInc;
+                    bool isWideLocal = modifiedOpcode == Opcode::ILoad ||
+                                       modifiedOpcode == Opcode::LLoad ||
+                                       modifiedOpcode == Opcode::FLoad ||
+                                       modifiedOpcode == Opcode::DLoad ||
+                                       modifiedOpcode == Opcode::ALoad ||
+                                       modifiedOpcode == Opcode::IStore ||
+                                       modifiedOpcode == Opcode::LStore ||
+                                       modifiedOpcode == Opcode::FStore ||
+                                       modifiedOpcode == Opcode::DStore ||
+                                       modifiedOpcode == Opcode::AStore ||
+                                       modifiedOpcode == Opcode::Ret;
+
+                    if (!isIInc && !isWideLocal)
+                    {
+                        throw std::runtime_error("Invalid wide modified opcode: " +
+                                                 std::to_string(static_cast<int>(code[ind])));
+                    }
+
+                    U8 operandBytes = isIInc ? 5 : 3;
+                    if (ind + operandBytes > code.size())
+                    {
+                        throw std::runtime_error("Truncated wide instruction operands");
+                    }
+
+                    U2 localIndex = static_cast<U2>(
+                        (static_cast<U2>(code[ind + 1]) << 8) |
+                        static_cast<U2>(code[ind + 2]));
+
+                    std::cout << " modified=" << toString(modifiedOpcode)
+                              << " index=" << localIndex;
+
+                    if (isIInc)
+                    {
+                        S2 increment = static_cast<S2>(
+                            (static_cast<U2>(code[ind + 3]) << 8) |
+                            static_cast<U2>(code[ind + 4]));
+                        std::cout << " constant=" << increment;
+                    }
+
+                    std::cout << '\n';
+                    pc = ind + operandBytes;
+                    continue;
+                }
+
+                // Variable-length switch operands.
                 if (op == Opcode::TableSwitch || op == Opcode::LookupSwitch)
                 {
                     U8 ind = pc + 1;
@@ -287,7 +342,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                                   << " high=" << high
                                   << " entries=" << entryCount;
                     }
-                    else
+                    else if (op == Opcode::LookupSwitch)
                     {
                         S4 pairCount = readS4(ind);
                         if (pairCount < 0 || static_cast<U8>(pairCount) > (code.size() - ind) / 8)
@@ -299,7 +354,6 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                         std::cout << " default=" << (static_cast<S8>(pc) + defaultOffset)
                                   << " pairs=" << pairCount;
                     }
-
                     std::cout << '\n';
                     pc = ind;
                     continue;
