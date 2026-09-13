@@ -34,6 +34,7 @@
 #include "vm/ClassLoader.hpp"
 #include "heap/Heap.hpp"
 #include "Opcode.hpp"
+#include "vm/JavaException.hpp"
 
 /**
  *        Union
