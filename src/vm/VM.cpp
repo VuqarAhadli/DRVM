@@ -3042,6 +3042,28 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                 break;
             }
 
+            case Opcode::ArrayLength:
+            {
+                Value arrayRefVal = frame.pop();
+                HeapObject** ref = std::get_if<HeapObject*>(&arrayRefVal);
+
+                if(!ref || !*ref)
+                {
+                    throw std::runtime_error("NullPointerException: arraylength on null reference");
+                }
+                if((*ref)->type != HeapType::Array)
+                {
+                    throw std::runtime_error("arraylength: reference is not an array");
+                }
+
+                auto* arrayObject = static_cast<ArrayHeapObject*>(*ref);
+
+
+                frame.push(arrayObject->length);
+
+                break;
+            }
+
 
 
             default:
