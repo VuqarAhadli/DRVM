@@ -224,7 +224,6 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
             {
                 Opcode op = static_cast<Opcode>(code[pc]);
 
-                bool implemented = isImplemented(op);
                 U1 opSize = operandSize(op);
                 
                 std::cout << pad 
@@ -239,7 +238,7 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << pc
                           << ANSI_RESET
                           << ' '
-                          << (implemented ? ANSI_BG_GREEN  : ANSI_BG_RED)
+                          << OPCODE_COLOUR_BG
                           << "0x"
                           << std::hex
                           << std::uppercase
@@ -251,7 +250,6 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                           << std::nouppercase
                           << std::dec
                           << std::setfill(' ')
-                          << (implemented ? ANSI_FG_GREEN  : ANSI_FG_RED)
                           << std::left
                           << std::setw(16)
                           << (' ' + toString(op))

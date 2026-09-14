@@ -3789,6 +3789,112 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     break;
                 }
 
+                case Opcode::GotoW:
+                {
+                    U4 opcodeStart = frame.programCounter - 1;
+
+                    auto branchByte1 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    auto branchByte2 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    auto branchByte3 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    auto branchByte4 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+
+                    S4 branchOffset = static_cast<S4>((branchByte1 << 24) | (branchByte2 << 16) | (branchByte3 << 8) | (branchByte4));
+
+                    frame.programCounter = opcodeStart + branchOffset;
+
+                    break;
+                }
+
+                case Opcode::JsrW:
+                {
+                    U4 opcodeStart = frame.programCounter - 1;
+
+                    auto branchByte1 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    auto branchByte2 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    auto branchByte3 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    auto branchByte4 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+                    S4 branchOffset = static_cast<S4>((branchByte1 << 24) | (branchByte2 << 16) | (branchByte3 << 8) | (branchByte4));
+
+                    S4 returnAddress = static_cast<S4>(frame.programCounter);
+                    frame.push(returnAddress);
+
+                    frame.programCounter = opcodeStart + branchOffset;
+                    break;
+                }
+
+                case Opcode::Breakpoint:
+                case Opcode::Unused_0xCB:
+                case Opcode::Unused_0xCC:
+                case Opcode::Unused_0xCD:
+                case Opcode::Unused_0xCE:
+                case Opcode::Unused_0xCF:
+                case Opcode::Unused_0xD0:
+                case Opcode::Unused_0xD1:
+                case Opcode::Unused_0xD2:
+                case Opcode::Unused_0xD3:
+                case Opcode::Unused_0xD4:
+                case Opcode::Unused_0xD5:
+                case Opcode::Unused_0xD6:
+                case Opcode::Unused_0xD7:
+                case Opcode::Unused_0xD8:
+                case Opcode::Unused_0xD9:
+                case Opcode::Unused_0xDA:
+                case Opcode::Unused_0xDB:
+                case Opcode::Unused_0xDC:
+                case Opcode::Unused_0xDD:
+                case Opcode::Unused_0xDE:
+                case Opcode::Unused_0xDF:
+                case Opcode::Unused_0xE0:
+                case Opcode::Unused_0xE1:
+                case Opcode::Unused_0xE2:
+                case Opcode::Unused_0xE3:
+                case Opcode::Unused_0xE4:
+                case Opcode::Unused_0xE5:
+                case Opcode::Unused_0xE6:
+                case Opcode::Unused_0xE7:
+                case Opcode::Unused_0xE8:
+                case Opcode::Unused_0xE9:
+                case Opcode::Unused_0xEA:
+                case Opcode::Unused_0xEB:
+                case Opcode::Unused_0xEC:
+                case Opcode::Unused_0xED:
+                case Opcode::Unused_0xEE:
+                case Opcode::Unused_0xEF:
+                case Opcode::Unused_0xF0:
+                case Opcode::Unused_0xF1:
+                case Opcode::Unused_0xF2:
+                case Opcode::Unused_0xF3:
+                case Opcode::Unused_0xF4:
+                case Opcode::Unused_0xF5:
+                case Opcode::Unused_0xF6:
+                case Opcode::Unused_0xF7:
+                case Opcode::Unused_0xF8:
+                case Opcode::Unused_0xF9:
+                case Opcode::Unused_0xFA:
+                case Opcode::Unused_0xFB:
+                case Opcode::Unused_0xFC:
+                case Opcode::Unused_0xFD:
+                case Opcode::ImpDep1:
+                case Opcode::ImpDep2:
+                {
+                    /* No-op */
+                    break;
+                }
 
                 default:
                 {

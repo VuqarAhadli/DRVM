@@ -22,15 +22,6 @@
 #include <Opcode.hpp>
 
 
-bool isImplemented(Opcode opcode)
-{
-    if (static_cast<U1>(opcode) <= 189 )
-    {
-        return true;
-    }
-    
-    return false;
-}
 
 std::string toString(Opcode opcode)
 {
