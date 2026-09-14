@@ -3629,7 +3629,23 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 case Opcode::Wide:
                 {
-                    
+                    U1 opcode = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    U1 indexByte1 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+                    U1 indexByte2 = bytecode[frame.programCounter];
+                    frame.programCounter++;
+
+                    if(opcode == static_cast<U1>(Opcode::IInc))
+                    {
+                        U1 countByte1 = bytecode[frame.programCounter];
+                        frame.programCounter++;
+                        U1 countByte2 = bytecode[frame.programCounter];
+                        frame.programCounter++;
+                    }
+
+
                     break;
                 }
 
