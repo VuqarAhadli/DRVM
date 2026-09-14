@@ -3629,7 +3629,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                 case Opcode::Wide:
                 {
-                    U1 opcode = bytecode[frame.programCounter];
+                    Opcode wideOpcode = static_cast<Opcode>(bytecode[frame.programCounter]);
                     frame.programCounter++;
 
                     U1 indexByte1 = bytecode[frame.programCounter];
@@ -3637,17 +3637,75 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     U1 indexByte2 = bytecode[frame.programCounter];
                     frame.programCounter++;
 
-                    if(opcode == static_cast<U1>(Opcode::IInc))
+                    U2 wideIndex = static_cast<U2>((indexByte1 << 8) | indexByte2);
+
+                    if (wideOpcode == Opcode::IInc)
                     {
                         U1 countByte1 = bytecode[frame.programCounter];
                         frame.programCounter++;
                         U1 countByte2 = bytecode[frame.programCounter];
                         frame.programCounter++;
+
+                        S2 wideConst = static_cast<S2>((countByte1 << 8) | countByte2);
+
+                        if (wideIndex >= frame.locals.size())
+                        {
+                            throw std::runtime_error("wide iinc: local variable index out of bounds");
+                        }
+
+                        S4 val = std::get<S4>(frame.locals[wideIndex]);
+                        frame.locals[wideIndex] = S4(val + wideConst);
+                        break;
                     }
 
+                    if (wideIndex >= frame.locals.size())
+                    {
+                        throw std::runtime_error("wide: local variable index out of bounds");
+                    }
+
+                    switch (wideOpcode)
+                    {
+                        case Opcode::ILoad:
+                        case Opcode::LLoad:
+                        case Opcode::FLoad:
+                        case Opcode::DLoad:
+                        case Opcode::ALoad:
+                            frame.push(frame.locals[wideIndex]);
+                            break;
+
+                        case Opcode::IStore:
+                        case Opcode::LStore:
+                        case Opcode::FStore:
+                        case Opcode::DStore:
+                            frame.locals[wideIndex] = frame.pop();
+                            break;
+
+                        case Opcode::AStore:
+                        {
+                            Value value = frame.pop();
+                            HeapObject** objectRef = std::get_if<HeapObject*>(&value);
+                            if (!objectRef)
+                            {
+                                throw std::runtime_error("wide astore: value on stack is not a reference type");
+                            }
+                            frame.setLocal(wideIndex, *objectRef);
+                            break;
+                        }
+
+                        case Opcode::Ret:
+                        {
+                            S4 returnAddress = std::get<S4>(frame.locals[wideIndex]);
+                            frame.programCounter = static_cast<U4>(returnAddress);
+                            break;
+                        }
+
+                        default:
+                            throw std::runtime_error("wide: unsupported modified opcode 0x" + std::to_string(static_cast<int>(wideOpcode)));
+                    }
 
                     break;
                 }
+
 
                 case Opcode::MultiANewArray:
                 {
