@@ -419,6 +419,48 @@ ClassFile* VM::resolveMethodOwner(ClassFile* startClass, const std::string& name
 }
 
 
+bool VM::tryInvokeNative(const std::string& className, const std::string& methodName, const std::string& descriptor, std::vector<Value>& args, Value& outResult)
+{
+    auto key = className + "." + methodName + ":" + descriptor;
+    auto it = nativeMethods.find(key);
+    if (it == nativeMethods.end())
+    {
+        return false;
+    }
+    outResult = it->second(*this, args);
+    return true;
+}
+
+void VM::registerNativeMethods()
+{
+    nativeMethods["java/lang/Math.abs:(I)I"] = [](VM&, std::vector<Value>& args) -> Value
+    {
+        return S4(std::abs(std::get<S4>(args[0])));
+    };
+
+    nativeMethods["java/lang/Math.abs:(J)J"] = [](VM&, std::vector<Value>& args) -> Value
+    {
+        return S8(std::abs(std::get<S8>(args[0])));
+    };
+
+    nativeMethods["java/lang/System.currentTimeMillis:()J"] = [](VM&, std::vector<Value>&) -> Value
+    {
+        auto now = std::chrono::system_clock::now().time_since_epoch();
+        return S8(std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
+    };
+
+    nativeMethods["java/lang/System.gc:()V"] = [](VM& vm, std::vector<Value>&) -> Value
+    {
+        vm.collectGarbage();
+        return Value();
+    };
+
+  
+}
+
+
+
+
 Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 {
     Frame frame(code.maxLocals, code.maxStack);
@@ -3174,6 +3216,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     {
                         --i;
                         args[i] = frame.pop();
+                    }
+
+                    Value nativeResult;
+                    if (tryInvokeNative(targetClassName, methodName, descriptor, args, nativeResult))
+                    {
+                        if (descriptor.back() != 'V')
+                        {
+                            frame.push(nativeResult);
+                        }
+                        break;
                     }
 
                     ClassFile* namedClass = loader.loadClass(targetClassName);
