@@ -29,6 +29,8 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <functional>
+#include <chrono>
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
