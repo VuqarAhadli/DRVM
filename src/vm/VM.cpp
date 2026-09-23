@@ -70,6 +70,16 @@ static void parseArrayDescriptor(const std::string& desc, int& dimensions, Value
     }
 }
 
+static const UTF16& asStringData(const Value& v)
+{
+    auto* ref = std::get_if<HeapObject*>(&v);
+    if (!ref || !*ref || (*ref)->type != HeapType::String)
+    {
+        throw std::runtime_error("expected a String reference");
+    }
+    return static_cast<StringHeapObject*>(*ref)->value;
+}
+
 VM::VM(ClassLoader& loader)
     : loader(loader)
 {
@@ -455,11 +465,49 @@ void VM::registerNativeMethods()
         return Value();
     };
 
+    
+
   
 }
 
 
+/**
+ * Here are the Java-standard method names in the exact JVM form you can match in your VM, with the native keys spelled as `ClassName.methodName:descriptor`.
 
+- `java/lang/Math.abs:(I)I`
+- `java/lang/Math.abs:(J)J`
+- `java/lang/StringBuffer.append:(Ljava/lang/String;)Ljava/lang/StringBuffer;`
+- `java/lang/System.arraycopy:(Ljava/lang/Object;ILjava/lang/Object;II)V`
+- `java/lang/Integer.byteValue:()B`
+- `java/lang/String.charAt:(I)C`
+- `java/io/InputStream.close:()V`
+- `java/lang/String.compareTo:(Ljava/lang/String;)I`
+- `java/lang/System.currentTimeMillis:()J`
+- `java/lang/StringBuffer.delete:(II)Ljava/lang/StringBuffer;`
+- `java/lang/String.endsWith:(Ljava/lang/String;)Z`
+- `java/lang/Object.equals:(Ljava/lang/Object;)Z`
+- `java/lang/Object.getClass:()Ljava/lang/Class;`
+- `java/lang/Class.getResourceAsStream:(Ljava/lang/String;)Ljava/io/InputStream;`
+- `java/lang/String.indexOf:(I)I`
+- `java/lang/Integer.intValue:()I`
+- `java/lang/String.length:()I`
+- `java/util/Random.nextInt:(I)I`
+- `java/lang/Object.notify:()V`
+- `java/lang/Throwable.printStackTrace:()V`
+- `java/io/PrintStream.println:(Ljava/lang/String;)V`
+- `java/util/Hashtable.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;`
+- `java/io/InputStream.read:()I`
+- `java/lang/StringBuffer.setCharAt:(IC)V`
+- `java/io/InputStream.skip:(J)J`
+- `java/lang/Thread.sleep:(J)V`
+- `java/lang/Thread.start:()V`
+- `java/lang/String.substring:(I)Ljava/lang/String;`
+- `java/lang/String.toLowerCase:()Ljava/lang/String;`
+- `java/lang/Object.toString:()Ljava/lang/String;`
+- `java/lang/String.valueOf:(I)Ljava/lang/String;`
+- `java/lang/Object.wait:()V`
+- `java/lang/Thread.yield:()V`
+*/
 
 Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 {
