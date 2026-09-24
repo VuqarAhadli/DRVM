@@ -24,13 +24,15 @@
 #include <vector>
 #include <variant>
 #include <string>
-#include <unordered_map>
 #include <stdexcept>
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <functional>
 #include <chrono>
+#include <iostream>
+#include <sstream>
+#include <unordered_set>
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
@@ -49,7 +51,19 @@ using Value = std::variant<S4,
                            F8,
                            HeapObject*>;  
 
-                           
+                          
+
+
+/* receiver = nullptr for static methods*/
+struct MethodCall
+{
+    ObjectHeapObject* receiver;  
+    std::vector<Value> args;
+};
+
+class VM;
+using NativeMethod = std::function<Value(VM&, const MethodCall&)>;   
+                        
 /**
  * One method invocation's execution context: operand stack + local variable array, 
  * sized per the method's Code attribute.
@@ -160,10 +174,9 @@ private:
     ClassFile* resolveFieldOwner(ClassFile* startClass, const std::string& fieldName);
     ClassFile* resolveMethodOwner(ClassFile* startClass, const std::string& name, const std::string& descriptor, const MethodInfo** outMethod);
 
-    using NativeMethod = std::function<Value(VM&, std::vector<Value>&)>;
     std::unordered_map<std::string, NativeMethod> nativeMethods;
     void registerNativeMethods();
-    bool tryInvokeNative(const std::string& className, const std::string& methodName, const std::string& descriptor, std::vector<Value>& args, Value& outResult);
+    bool tryInvokeNative(const std::string& className, const std::string& methodName, const std::string& descriptor, const MethodCall& call, Value& outResult);
 
     
 };
