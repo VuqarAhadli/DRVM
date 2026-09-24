@@ -1,0 +1,11 @@
+Manifest-Version: 1.0
+Archiver-Version: Plexus Archiver
+Created-By: Apache Maven
+Built-By: microemu-build
+Build-Jdk: 1.5.0_12
+Build-Time: 20081214214218
+Implementation-Version: 2.0.3
+License: GNU Lesser General Public License (LGPL)
+SVN-Revision: 
+Version: 2.0.3.64
+
