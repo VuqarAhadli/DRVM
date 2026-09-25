@@ -439,21 +439,6 @@ bool VM::tryInvokeNative(const std::string& className, const std::string& method
 
 void VM::registerNativeMethods()
 {
-    nativeMethods["java/lang/Math.abs:(I)I"] = [](VM&, const MethodCall& call) -> Value
-    {
-        return S4(std::abs(std::get<S4>(call.args[0])));
-    };
-
-    nativeMethods["java/lang/Math.abs:(J)J"] = [](VM&, const MethodCall& call) -> Value
-    {
-        return S8(std::abs(std::get<S8>(call.args[0])));
-    };
-
-    nativeMethods["java/lang/System.currentTimeMillis:()J"] = [](VM&, const MethodCall&) -> Value
-    {
-        auto now = std::chrono::system_clock::now().time_since_epoch();
-        return S8(std::chrono::duration_cast<std::chrono::milliseconds>(now).count());
-    };
 
     nativeMethods["java/lang/System.gc:()V"] = [](VM& vm, const MethodCall&) -> Value
     {
