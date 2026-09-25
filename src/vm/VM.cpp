@@ -446,6 +446,12 @@ void VM::registerNativeMethods()
         return Value();
     };
 
+    /**
+     * TODO:
+     *  1. replace graphic api with SDL
+     * 
+     */
+
     
 
   
