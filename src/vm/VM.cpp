@@ -3105,48 +3105,61 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     {
                         throw std::runtime_error("NullPointerException: invokevirtual on null reference");
                     }
+                    if ((*objectRef)->type != HeapType::Object)
+                    {
+                        throw std::runtime_error("invokevirtual: reference is not an object instance");
+                    }
 
                     ObjectHeapObject* instance = static_cast<ObjectHeapObject*>(*objectRef);
                     
                     const MethodInfo* targetMethod = nullptr;
                     ClassFile* targetClass = resolveMethodOwner(instance->javaClass, methodName, descriptor, &targetMethod);
-                    if (!targetClass)
+                    const CodeAttribute* targetCode = (targetMethod && targetClass) ? targetClass->getCode(*targetMethod) : nullptr;
+
+                    if (targetCode)
                     {
-                        throw std::runtime_error("invokevirtual: method \"" + methodName + " " + descriptor + "\" not found");
-                    }
-                    if (!targetMethod)
-                    {
-                        throw std::runtime_error("invokevirtual: method \"" + methodName + " " + descriptor + "\" not found");
-                    }
+                        Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
+                        invokedFrame.setLocal(0, *objectRef);
 
-                    const CodeAttribute* targetCode = targetClass->getCode(*targetMethod);
-                    if (!targetCode)
-                    {
-                        throw std::runtime_error("invokevirtual: method \"" + methodName + "\" has no Code attribute");
-                    }
+                        U2 localSlot = 1;
 
-                    Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
-                    invokedFrame.setLocal(0, *objectRef);
+                        for (U4 l = 0; l < paramTypes.size(); ++l)
+                        {
+                            invokedFrame.locals[localSlot] = args[l];
+                            localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
+                        }
 
-                    U2 localSlot = 1;
+                        FrameGuard invokedGuard(*this, invokedFrame);
+                        Value result = execute(*targetClass, *targetCode);
 
-                    for (U4 l = 0; l < paramTypes.size(); ++l)
-                    {
-                        invokedFrame.locals[localSlot] = args[l];
-                        localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
-                    }
+                        if (descriptor.back() != 'V')
+                        {
+                            frame.push(result);
+                        }
 
-                    FrameGuard invokedGuard(*this,invokedFrame);
-                    Value result = execute(*targetClass, *targetCode);
 
-                    char returnType = descriptor.back();
-
-                    if (returnType != 'V')
-                    {
-                        frame.push(result);
+                        break;
                     }
 
-                    break;
+                    MethodCall call
+                    {
+                        .receiver = instance,
+                        .args = std::move(args)
+                    };
+                    Value nativeResult;
+
+                    if (tryInvokeNative(instance->javaClass->getClassName(),methodName,descriptor,call, nativeResult))
+                    {
+                        if (descriptor.back() != 'V')
+                        {
+                            frame.push(nativeResult);
+                        }
+                        break;
+                    }
+
+                    throw std::runtime_error(
+                        "invokevirtual: method \"" + methodName + " " + descriptor + "\" not found (no bytecode, no native implementation)"
+                    );
                 }
                 case Opcode::InvokeSpecial:
                 {
