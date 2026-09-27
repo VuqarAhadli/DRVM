@@ -3196,46 +3196,53 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     {
                         throw std::runtime_error("NullPointerException: invokespecial on null reference");
                     }
+                    if ((*objectRef)->type != HeapType::Object)
+                    {
+                        throw std::runtime_error("invokespecial: reference is not an object instance");
+                    }
+
+                    ObjectHeapObject* instance = static_cast<ObjectHeapObject*>(*objectRef);
 
                     ClassFile* namedClass = loader.loadClass(targetClassName);
-                    if (!namedClass)
-                    {
-                        throw std::runtime_error("invokespecial: failed to load class \"" + targetClassName + "\"");
-                    }
-
                     const MethodInfo* targetMethod = nullptr;
-                    ClassFile* targetClass = resolveMethodOwner(namedClass, methodName, descriptor, &targetMethod);
-                    if (!targetClass)
+                    ClassFile* targetClass = namedClass ? resolveMethodOwner(namedClass, methodName, descriptor, &targetMethod) : nullptr;
+                    const CodeAttribute* targetCode = (targetClass && targetMethod) ? targetClass->getCode(*targetMethod) : nullptr;
+
+                    if (targetCode)
                     {
-                        throw std::runtime_error("invokespecial: method \"" + methodName + " " + descriptor + "\" not found");
+                        Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
+                        invokedFrame.setLocal(0, *objectRef);
+
+                        U2 localSlot = 1;
+                        for (U4 l = 0; l < paramTypes.size(); ++l)
+                        {
+                            invokedFrame.locals[localSlot] = args[l];
+                            localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
+                        }
+
+                        FrameGuard invokedGuard(*this, invokedFrame);
+                        Value result = execute(*targetClass, *targetCode);
+
+                        if (descriptor.back() != 'V')
+                        {
+                            frame.push(result);
+                        }
+                        break;
                     }
 
-                    const CodeAttribute* targetCode = targetClass->getCode(*targetMethod);
-                    if (!targetCode)
+                    MethodCall call{ .receiver = instance, .args = std::move(args) };
+                    Value nativeResult;
+                    if (tryInvokeNative(targetClassName, methodName, descriptor, call, nativeResult))
                     {
-                        throw std::runtime_error("invokespecial: method \"" + methodName + "\" has no Code attribute");
+                        if (descriptor.back() != 'V')
+                        {
+                            frame.push(nativeResult);
+                        }
+                        break;
                     }
 
-                    Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
-                    invokedFrame.setLocal(0, *objectRef);
+                    throw std::runtime_error("invokespecial: method \"" + methodName + " " + descriptor + "\" not found (no bytecode, no native implementation)");
 
-                    U2 localSlot = 1;
-                    for (U4 l = 0; l < paramTypes.size(); ++l)
-                    {
-                        invokedFrame.locals[localSlot] = args[l];
-                        localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
-                    }
-
-                    FrameGuard invokedGuard(*this, invokedFrame);
-                    Value result = execute(*targetClass, *targetCode);
-
-                    char returnType = descriptor.back();
-                    if (returnType != 'V')
-                    {
-                        frame.push(result);
-                    }
-
-                    break;
                 }
                 case Opcode::InvokeStatic:
                 {
