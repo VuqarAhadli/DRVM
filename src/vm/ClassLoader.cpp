@@ -20,16 +20,15 @@
  */
 
 #include "vm/ClassLoader.hpp"
-#include <stdexcept>
 
-ClassLoader::ClassLoader(const std::string& classPath)
-    : classPath(classPath)
+ClassLoader::ClassLoader(const std::string& classPath, const std::string& apiClassPath)
+    : classPath(classPath), apiClassPath(apiClassPath)
 {
 }
 
-std::string ClassLoader::resolvePath(const std::string& className) const
+std::string ClassLoader::resolvePath(const std::string& basePath, const std::string& className) const
 {
-    return classPath + "/" + className + ".class";
+    return basePath + "/" + className + ".class";
 }
 
 ClassFile* ClassLoader::loadClass(const std::string& className)
@@ -41,10 +40,26 @@ ClassFile* ClassLoader::loadClass(const std::string& className)
         return iter->second.get();
     }
 
-    std::string path = resolvePath(className);
+    std::string path = resolvePath(classPath, className);
+
+    if (!std::filesystem::exists(path))
+    {
+        path = resolvePath(apiClassPath, className);
+    }
+    if (!std::filesystem::exists(path))
+    {
+        return nullptr;
+    }
+
+
+    std::cout << "Loading " << className << " from " << path << '\n';
+   
     auto classFile = std::make_unique<ClassFile>(path);
 
     ClassFile* rawFile = classFile.get();
     loadedClasses[className] = std::move(classFile);
+
+
+
     return rawFile;
 }

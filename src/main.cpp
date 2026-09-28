@@ -49,7 +49,20 @@ int main(int argc, char** argv)
         std::cout << "Attempting to run clinit for " << cls.getClassName() << "\n";
 
         std::filesystem::path classPath = std::filesystem::path(argv[1]).parent_path();
-        ClassLoader loader(classPath.string());
+        ClassLoader loader(classPath.string(), "../runtime/classes");
+        for (const std::string& className : {
+            "java/lang/Object",
+            "java/lang/String",
+            "javax/microedition/midlet/MIDlet",
+            "javax/microedition/lcdui/Graphics"
+        })
+        {
+            if (!loader.loadClass(className))
+            {
+                throw std::runtime_error("Failed to load " + className);
+            }
+        }
+
         VM vm(loader);
         try
         {

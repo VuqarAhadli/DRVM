@@ -24,6 +24,9 @@
 #include <string>
 #include <unordered_map>
 #include <memory>
+#include <stdexcept>
+#include <filesystem>
+#include <iostream>
 #include "classfile/ClassFile.hpp"
 
 /**
@@ -33,14 +36,17 @@
 class ClassLoader
 {
 public:
-    explicit ClassLoader(const std::string& classPath);
+    explicit ClassLoader(const std::string& classPath,
+                         const std::string& apiClassPath);
 
 
     ClassFile* loadClass(const std::string& className);
 
 private:
-    std::string resolvePath(const std::string& className) const;
+    std::string resolvePath(const std::string& basePath, const std::string& className) const;
 
     std::string classPath;
+    std::string apiClassPath;
+
     std::unordered_map<std::string, std::unique_ptr<ClassFile>> loadedClasses;
 };
