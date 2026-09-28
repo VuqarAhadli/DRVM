@@ -3114,31 +3114,12 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     
                     const MethodInfo* targetMethod = nullptr;
                     ClassFile* targetClass = resolveMethodOwner(instance->javaClass, methodName, descriptor, &targetMethod);
-                    const CodeAttribute* targetCode = (targetMethod && targetClass) ? targetClass->getCode(*targetMethod) : nullptr;
-
-                    if (targetCode)
+                    
+                    if (!targetClass || !targetMethod)
                     {
-                        Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
-                        invokedFrame.setLocal(0, *objectRef);
-
-                        U2 localSlot = 1;
-
-                        for (U4 l = 0; l < paramTypes.size(); ++l)
-                        {
-                            invokedFrame.locals[localSlot] = args[l];
-                            localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
-                        }
-
-                        FrameGuard invokedGuard(*this, invokedFrame);
-                        Value result = execute(*targetClass, *targetCode);
-
-                        if (descriptor.back() != 'V')
-                        {
-                            frame.push(result);
-                        }
-
-
-                        break;
+                        throw std::runtime_error(
+                            "invokevirtual: method \"" + methodName + " " + descriptor + "\" not found"
+                        );
                     }
 
                     MethodCall call
@@ -3148,12 +3129,42 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     };
                     Value nativeResult;
 
-                    if (tryInvokeNative(instance->javaClass->getClassName(),methodName,descriptor,call, nativeResult))
+                    if (tryInvokeNative(targetClass->getClassName(), methodName, descriptor, call, nativeResult))
                     {
                         if (descriptor.back() != 'V')
                         {
                             frame.push(nativeResult);
                         }
+
+                        break;
+                    }
+
+                    const CodeAttribute* targetCode = targetClass->getCode(*targetMethod);
+
+                    if (targetCode)
+                    {
+                        Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
+
+                        invokedFrame.setLocal(0, *objectRef);
+
+                        U2 localSlot = 1;
+
+                        for (U4 l = 0; l < paramTypes.size(); ++l)
+                        {
+                            invokedFrame.locals[localSlot] = call.args[l];
+
+                            localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
+                        }
+
+                        FrameGuard invokedGuard(*this, invokedFrame);
+
+                        Value result = execute(*targetClass, *targetCode);
+
+                        if (descriptor.back() != 'V')
+                        {
+                            frame.push(result);
+                        }
+
                         break;
                     }
 
