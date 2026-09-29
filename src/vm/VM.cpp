@@ -3217,7 +3217,31 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     ClassFile* namedClass = loader.loadClass(targetClassName);
                     const MethodInfo* targetMethod = nullptr;
                     ClassFile* targetClass = namedClass ? resolveMethodOwner(namedClass, methodName, descriptor, &targetMethod) : nullptr;
-                    const CodeAttribute* targetCode = (targetClass && targetMethod) ? targetClass->getCode(*targetMethod) : nullptr;
+
+                    if (!targetClass || !targetMethod)
+                    {
+                        throw std::runtime_error("invokespecial: method \"" + methodName + " " + descriptor + "\" not found");
+                    }
+
+                    MethodCall call 
+                    {
+                        .receiver = instance,
+                        .args = std::move(args)
+                    };
+
+                    Value nativeResult;
+
+                    if (tryInvokeNative(targetClass->getClassName(), methodName, descriptor, call, nativeResult))
+                    {
+                        if (descriptor.back() != 'V')
+                        {
+                            frame.push(nativeResult);
+                        }
+                        
+                        break;
+                    }
+
+                    const CodeAttribute* targetCode = targetClass->getCode(*targetMethod);
 
                     if (targetCode)
                     {
@@ -3225,34 +3249,27 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                         invokedFrame.setLocal(0, *objectRef);
 
                         U2 localSlot = 1;
+
                         for (U4 l = 0; l < paramTypes.size(); ++l)
                         {
-                            invokedFrame.locals[localSlot] = args[l];
+                            invokedFrame.locals[localSlot] = call.args[l];
+
                             localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
                         }
 
                         FrameGuard invokedGuard(*this, invokedFrame);
+
                         Value result = execute(*targetClass, *targetCode);
 
                         if (descriptor.back() != 'V')
                         {
                             frame.push(result);
                         }
+
                         break;
                     }
 
-                    MethodCall call{ .receiver = instance, .args = std::move(args) };
-                    Value nativeResult;
-                    if (tryInvokeNative(targetClassName, methodName, descriptor, call, nativeResult))
-                    {
-                        if (descriptor.back() != 'V')
-                        {
-                            frame.push(nativeResult);
-                        }
-                        break;
-                    }
-
-                    throw std::runtime_error("invokespecial: method \"" + methodName + " " + descriptor + "\" not found (no bytecode, no native implementation)");
+                    throw std::runtime_error( "invokespecial: method \"" + methodName + " " + descriptor + "\" not found (no bytecode, no native implementation)");
 
                 }
                 case Opcode::InvokeStatic:
