@@ -79,6 +79,7 @@ static const UTF16& asStringData(const Value& v)
 VM::VM(ClassLoader& loader)
     : loader(loader)
 {
+    registerNativeMethods();
 }
 
 HeapObject* VM::createMultiArray(const std::vector<S4>& dimSizes, std::size_t dimIndex, ValueType leafType, std::size_t totalDimensions)
@@ -451,9 +452,6 @@ void VM::registerNativeMethods()
      *  1. replace graphic api with SDL
      * 
      */
-
-    
-
   
 }
 
