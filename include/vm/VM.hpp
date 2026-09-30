@@ -154,13 +154,22 @@ public:
     HeapObject* allocateString(const std::string& utf8);
     
     void collectGarbage();
+    ObjectHeapObject& allocateObject(ClassFile& classFile);
+    Value invokeInstance(ClassFile& classFile, const MethodInfo& method, ObjectHeapObject& instance, const std::vector<Value>& args);
+    void setTrace(bool trace);
+
+
 
 private:
     friend struct FrameGuard;
     U4 gcThreshold = 1024;
+    bool trace = false;
 
     
     Value execute(ClassFile& classFile, const CodeAttribute& code);
+    Value execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame);
+
+ 
     std::vector<HeapObject*> gatherRoots();
     std::unordered_map<ClassFile*, std::unordered_map<std::string, Value>> staticFields;
     ClassLoader& loader;

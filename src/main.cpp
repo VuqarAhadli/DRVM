@@ -30,56 +30,133 @@ int main(int argc, char** argv)
 {
     if (argc < 2)
     {
-        std::cout << "Usage: drvm <class file>\n";
+        std::cout << "Usage: drvm <class file> [--run] [--trace]\n";
         return 1;
     }
 
-    
-    ClassFile cls(argv[1]);
-
-
-    cls.dump();
-
-    /* testing execution */
-    if (argc == 3 )
+    bool run = false;
+    bool trace = false;
+    for (int i = 2; i < argc; ++i)
     {
-    const MethodInfo* clinit = cls.findMethod("<clinit>", "()V");
-    if (clinit)
+        std::string arg = argv[i];
+
+        if (arg == "--run")
+        {
+            run = true;
+        }
+        else if (arg == "--trace")
+        {
+            trace = true;
+        }
+        else
+        {
+            throw std::runtime_error("Unknown argument: " + arg);
+        }
+    }
+
+
+    try
     {
-        std::cout << "Attempting to run clinit for " << cls.getClassName() << "\n";
+        ClassFile cls(argv[1]);
+
+        if (!run)
+        {
+            cls.dump();
+            return 0;
+        }
 
         std::filesystem::path classPath = std::filesystem::path(argv[1]).parent_path();
-        ClassLoader loader(classPath.string(), "../runtime/classes");
-        for (const std::string& className : {
-            "java/lang/Object",
-            "java/lang/String",
-            "javax/microedition/midlet/MIDlet",
-            "javax/microedition/lcdui/Graphics"
-        })
-        {
-            if (!loader.loadClass(className))
-            {
-                throw std::runtime_error("Failed to load " + className);
-            }
-        }
+
+        std::filesystem::path runtimePath = classPath.parent_path() / "runtime" / "classes";
+
+        ClassLoader loader(
+            classPath.string(),
+            runtimePath.string()
+        );
 
         VM vm(loader);
-        try
+        vm.setTrace(trace);
+
+        std::cout << "Loading " << cls.getClassName() << '\n';
+
+
+        /* first check main void main(String[] args) */
+        const MethodInfo* mainMethod = cls.findMethod("main", "([Ljava/lang/String;)V");
+
+        if (mainMethod)
         {
+            vm.invoke(cls, *mainMethod);
+            return 0;
+        }
+
+        /*
+         * Initialise the class. | clinit returns void |
+         */
+        const MethodInfo* clinit = cls.findMethod("<clinit>", "()V");
+
+        if (clinit)
+        {
+            std::cout << "Running... "
+                      << cls.getClassName()
+                      << ".<clinit>()V\n";
+
             vm.invoke(cls, *clinit);
+
             std::cout << "<clinit> completed\n";
         }
-        catch(const std::exception& e)
+
+        /*
+         * Construct the MIDlet object.
+         */
+        const MethodInfo* init = cls.findMethod("<init>", "()V");
+
+        if (!init)
         {
-            std::cerr << "VM error: " << e.what() << '\n';
+            throw std::runtime_error(
+                cls.getClassName() + " has no <init>()V"
+            );
         }
-    
+
+        ObjectHeapObject& instance = vm.allocateObject(cls);
+
+        std::cout << "Running "
+                  << cls.getClassName()
+                  << ".<init>()V\n";
+
+        vm.invokeInstance(
+            cls, *init, instance, {}
+        );
+
+        std::cout << "<init> completed\n";
+
+        /*
+         * Enter the MIDlet lifecycle.
+         */
+        const MethodInfo* startApp = cls.findMethod("startApp", "()V");
+
+        if (!startApp)
+        {
+            throw std::runtime_error(
+                cls.getClassName() + " has no startApp()V"
+            );
+        }
+
+        std::cout << "Running "
+                  << cls.getClassName()
+                  << ".startApp()V\n";
+
+        vm.invokeInstance(cls, *startApp, instance, {});
+
+        std::cout << "startApp completed\n";
     }
-    
-    else
+    catch (const std::exception& e)
     {
-        std::cout << "\nNo <clinit> found, skipping VM test.\n";
+        std::cerr << "\nVM error: "
+                  << e.what()
+                  << '\n';
+
+        return 1;
     }
-    }
+
     return 0;
 }

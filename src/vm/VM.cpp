@@ -21,6 +21,8 @@
 
 #include "vm/VM.hpp"
 
+#include <iostream>
+
 
 static void parseArrayDescriptor(const std::string& desc, int& dimensions, ValueType& leafType)
 {
@@ -80,6 +82,11 @@ VM::VM(ClassLoader& loader)
     : loader(loader)
 {
     registerNativeMethods();
+}
+
+void VM::setTrace (bool trace)
+{
+    this->trace = trace;
 }
 
 HeapObject* VM::createMultiArray(const std::vector<S4>& dimSizes, std::size_t dimIndex, ValueType leafType, std::size_t totalDimensions)
@@ -494,9 +501,61 @@ void VM::registerNativeMethods()
 - `java/lang/Thread.yield:()V`
 */
 
-Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
+
+Value VM::invokeInstance(ClassFile& classFile, const MethodInfo& method, ObjectHeapObject& instance, const std::vector<Value>& args)
 {
-    Frame frame(code.maxLocals, code.maxStack);
+    const CodeAttribute* code = classFile.getCode(method);
+
+    if (!code)
+    {
+        throw std::runtime_error(
+            "Instance method has no Code attribute -> (native/abstract)"
+        );
+    }
+
+    Frame frame(code->maxLocals, code->maxStack);
+
+    frame.setLocal(0, &instance);
+
+    U2 localSlot = 1;
+
+    ConstantUtf8* descriptorUtf8 = classFile.getConstant<ConstantUtf8>(method.descriptorIndex);
+    std::string descriptor = descriptorUtf8->value;
+
+
+    std::vector<char> paramTypes = parseParameterTypes(descriptor);
+
+    for (U4 i = 0; i < paramTypes.size(); ++i)
+    {
+        frame.locals[localSlot] = args[i];
+        localSlot += (paramTypes[i] == 'J' || paramTypes[i] == 'D') ? 2 : 1;
+    }
+
+    return execute(classFile, *code, frame);
+}
+
+ObjectHeapObject& VM::allocateObject(ClassFile& classFile)
+{
+    if (heap.size() >= gcThreshold)
+    {
+        collectGarbage();
+    }
+
+    heap.push_back(std::make_unique<ObjectHeapObject>(&classFile));
+
+    ObjectHeapObject* object = static_cast<ObjectHeapObject*>(heap.back().get());
+ 
+    if (heap.size() >= gcThreshold)
+    {
+        gcThreshold = heap.size() * 2;
+    }
+
+    return *object;
+}
+
+Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
+{
+    // Frame frame(code.maxLocals, code.maxStack);
     FrameGuard guard(*this, frame);
     const std::vector<U1>& bytecode = code.code;
 
@@ -563,6 +622,27 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
         {
             auto opcode = static_cast<Opcode>(bytecode[frame.programCounter++]);
 
+            if (trace)
+            {
+                std::cout << '['
+                          << classFile.getClassName()
+                          << "] pc="
+                          << std::left
+                          << std::setw(4)
+                          << instructionStart
+                          << " opcode=0x"
+                          << std::hex
+                          << std::uppercase
+                          << std::setfill('0')
+                          << std::setw(3)
+                          << std::right
+                          << static_cast<int>(opcode)
+                          << std::setfill(' ')
+                          << std::dec
+                          << "  "
+                          << toString(opcode)
+                          << '\n';
+            }
 
             switch (opcode)
             {
@@ -3154,9 +3234,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                             localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
                         }
 
-                        FrameGuard invokedGuard(*this, invokedFrame);
+                        ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        Value result = execute(*targetClass, *targetCode);
+                        std::cerr << "CALL "
+                                  << targetClass->getClassName()
+                                  << "."
+                                  << targetName->value
+                                  << descriptor
+                                  << '\n';
+
+                        Value result = execute(*targetClass, *targetCode, invokedFrame);
 
                         if (descriptor.back() != 'V')
                         {
@@ -3255,9 +3342,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                             localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2 : 1;
                         }
 
-                        FrameGuard invokedGuard(*this, invokedFrame);
+                        ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        Value result = execute(*targetClass, *targetCode);
+                        std::cerr << "CALL "
+                                  << targetClass->getClassName()
+                                  << "."
+                                  << targetName->value
+                                  << descriptor
+                                  << '\n';
+
+                        Value result = execute(*targetClass, *targetCode, invokedFrame);
 
                         if (descriptor.back() != 'V')
                         {
@@ -3344,9 +3438,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                             localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2: 1;
                         }
 
-                        FrameGuard invokedGuard(*this, invokedFrame);
+                        ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        Value result = execute(*targetClass, *targetCode);
+                        std::cerr << "CALL "
+                                  << targetClass->getClassName()
+                                  << "."
+                                  << targetName->value
+                                  << descriptor
+                                  << '\n';
+
+                        Value result = execute(*targetClass, *targetCode, invokedFrame);
 
                         if (descriptor.back() != 'V')
                         {
@@ -3453,9 +3554,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                             localSlot += (paramTypes[l] == 'J' || paramTypes[l] == 'D') ? 2: 1;
                         }
 
-                        FrameGuard invokedGuard(*this, invokedFrame);
+                        ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        Value result = execute(*targetClass, *targetCode);
+                        std::cerr << "CALL "
+                                  << targetClass->getClassName()
+                                  << "."
+                                  << targetName->value
+                                  << descriptor
+                                  << '\n';
+
+                        Value result = execute(*targetClass, *targetCode, invokedFrame);
 
                         if (descriptor.back() != 'V')
                         {
@@ -4126,6 +4234,12 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
     }
 
     throw std::runtime_error("Fell off end of method without return");
+}
+
+Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
+{
+    Frame frame(code.maxLocals, code.maxStack);
+    return execute(classFile, code, frame);
 }
 
 std::vector<HeapObject*> VM::gatherRoots()
