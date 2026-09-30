@@ -3420,7 +3420,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
 
                     MethodCall call
                     {
-                        .receiver = nullptr,
+                        .receiver = instance,
                         .args = std::move(args)
                     };
 
@@ -3442,7 +3442,9 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code)
                     {
                         Frame invokedFrame(targetCode->maxLocals, targetCode->maxStack);
 
-                        U2 localSlot = 0;
+                        invokedFrame.setLocal(0, *objectRef);
+
+                        U2 localSlot = 1;
 
                         for (U4 l = 0; l < paramTypes.size(); ++l)
                         {
