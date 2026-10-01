@@ -1,0 +1,3 @@
+TODO:
+1. Accommodate all attributes, such as StackMapTable.
+2. Parse operands according to the operand count.
