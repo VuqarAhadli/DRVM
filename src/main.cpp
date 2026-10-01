@@ -30,17 +30,23 @@ int main(int argc, char** argv)
 {
     if (argc < 2)
     {
-        std::cout << "Usage: drvm <class file> [--run] [--trace]\n";
+        std::cout << "Usage: drvm <class file> [--dump] [--run] [--trace]\n";
         return 1;
     }
 
+    bool dump = false;
     bool run = false;
     bool trace = false;
     for (int i = 2; i < argc; ++i)
     {
         std::string arg = argv[i];
 
-        if (arg == "--run")
+
+        if (arg == "--dump")
+        {
+            dump = true;
+        }
+        else if (arg == "--run")
         {
             run = true;
         }
@@ -59,11 +65,12 @@ int main(int argc, char** argv)
     {
         ClassFile cls(argv[1]);
 
-        if (!run)
+        if (dump)
         {
             cls.dump();
             return 0;
         }
+
 
         std::filesystem::path classPath = std::filesystem::path(argv[1]).parent_path();
 

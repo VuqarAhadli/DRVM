@@ -27,7 +27,7 @@ fi
 
 cd ./build
 echo "Building project..."
-cmake ..
+cmake --build . --target=debugbuild
 make 
 
 echo ""
@@ -35,10 +35,16 @@ echo "Starting Benchmark"
 echo "=&$@#$%^&!@#$%(=&$@#$%^&!@#$%("
 echo ""
 
-echo "#&=*/!  DRVM - 50 runs  #&=*/!"
-/usr/bin/time -l sh -c 'for i in {1..50}; do ./drvm ../extracted/i.class > /dev/null; done'
+echo "#&=*/!  DRVM - 50 runs (no optimisation)  #&=*/!"
+/usr/bin/time -l sh -c 'for i in {1..50}; do ./drvmnoopt ../extracted/i.class --dump > /dev/null; done'
 
 echo ""
+
+echo "#&=*/!  DRVM - 50 runs (optimisation)  #&=*/!"
+/usr/bin/time -l sh -c 'for i in {1..50}; do ./drvmopt ../extracted/i.class --dump > /dev/null; done'
+
+echo ""
+
 echo "#&=*/!  JAVAP - 50 runs  #&=*/!"
 /usr/bin/time -l sh -c 'for i in {1..50}; do javap -v ../extracted/i.class > /dev/null; done'
 
