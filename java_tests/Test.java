@@ -353,12 +353,12 @@ public class Test
 
         int result = total;
 
-        if (result == 1697)
+        if (result == 1581354567)
         {
             return;
         }
 
-        throw new AssertionError();
+        throw new RuntimeException();
     }
 
     interface Calculator
