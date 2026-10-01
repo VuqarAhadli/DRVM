@@ -2,7 +2,7 @@
 
 # DRVM
 
-DRVM (Diamond Rush Virtual Machine) is a custom Java Virtual Machine (JVM) implementation and Java class disassembler for reverse engineering the iconic J2ME game Diamond Rush.
+DRVM (Diamond Rush Virtual Machine) is a custom J2ME JVM and full Java class-file disassembler written in pure C++, built for reverse engineering and analysing the iconic J2ME game Diamond Rush. Supports Java class files in general, beyond its J2ME focus.
 
 ## Why?
 
