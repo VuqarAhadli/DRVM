@@ -494,7 +494,9 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else if (auto* sf = dynamic_cast<const SourceFileAttribute*>(attribute))
     {
-        std::cout << SOURCE_FILE_ATTRIBUTE_COLOUR << pad << "SourceFile" << ANSI_RESET << ": source_file_index=" << sf->sourceFileIndex << "\n";
+        ConstantUtf8* sourceFileUtf8 = getConstant<ConstantUtf8>(sf->sourceFileIndex);
+        std::string sourceFile = sourceFileUtf8->value;
+        std::cout << SOURCE_FILE_ATTRIBUTE_COLOUR << pad << "SourceFile" << ANSI_RESET << ": source_file_index=" << sf->sourceFileIndex << " -> " << sourceFile << "\n";
     }
     else if (auto* lnt = dynamic_cast<const LineNumberTableAttribute*>(attribute))
     {
