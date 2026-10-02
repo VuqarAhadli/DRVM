@@ -118,6 +118,26 @@ static U2 computeArgsSize(const std::string& descriptor, bool isStatic)
     return size;
 }
 
+static std::vector<U1> resolveOperands(U4 operandVal, U1 opSize)
+{
+    std::vector<U1> operands;
+    operands.reserve(opSize);
+
+    for (int i = opSize - 1; i >= 0 ; --i)
+    {
+        /**
+         *   Using bitwise and and right bit-shift on operands to resolve them in big endian order.
+         *      
+         *   Suppose -> operands: 0b| 0111 0110 | 1110 1010 |
+         *              mask:     0b| 1111 1111 |
+         */
+
+        operands.push_back(static_cast<U1>((operandVal >> (i * 8)) & 0xFF));
+    }
+
+    return operands;
+}
+
 std::vector<char> parseParameterTypes(const std::string& descriptor)
 {
     std::vector<char> params;
@@ -383,22 +403,44 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                         if (!resolved.empty())
                             std::cout << " (" << resolved << ")";
                     }
-                    else
+                    else if (opSize == 1)
                     {   
-                    std::cout << "operand="
-                              << std::setw(5)
-                              << operandVal
-                              << " (0x" 
-                              << std::hex 
-                              << std::uppercase
-                              << std::setfill('0')
-                              << std::setw(4)
-                              << std::right
-                              << operandVal
-                              << std::dec 
-                              << std::nouppercase 
-                              << std::setfill(' ')
-                              << ")";
+                        std::cout << "operand="
+                                << std::setw(5)
+                                << operandVal
+                                << " (0x" 
+                                << std::hex 
+                                << std::uppercase
+                                << std::setfill('0')
+                                << std::setw(4)
+                                << std::right
+                                << operandVal
+                                << std::dec 
+                                << std::nouppercase 
+                                << std::setfill(' ')
+                                << ")";
+                    } 
+                    else
+                    {
+                        std::vector<U1> operands = resolveOperands(operandVal, opSize);
+
+                        std::cout << "operands=";
+                        for (U1 op : operands)
+                        {
+                            std::cout << static_cast<unsigned int>(op)
+                                      << " (0x" 
+                                      << std::hex 
+                                      << std::uppercase
+                                      << std::setfill('0')
+                                      << std::setw(2)
+                                      << std::right
+                                      << static_cast<unsigned int>(op)
+                                      << std::dec 
+                                      << std::nouppercase 
+                                      << std::setfill(' ')
+                                      << ") ";
+                        }
+
                     }
                 }
                 std::cout << '\n';
