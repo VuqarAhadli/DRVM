@@ -769,6 +769,9 @@ std::unique_ptr<AttributeInfo> ClassFile::readAttribute()
     if (name == "SourceFile")
     {
         U2 sourceFileIndex = reader.readU2();
+
+        sourceFile = (getConstant<ConstantUtf8>(sourceFileIndex))->value;
+        
         return std::make_unique<SourceFileAttribute>(
             nameIndex, length, sourceFileIndex
         );
@@ -1761,6 +1764,9 @@ void ClassFile::dump()
               << infoStruct.lastModified
               << "\n"
 #endif
+              << "Compiled from:       "
+              << sourceFile
+              << "\n"
               << "Magic:"
 	          << ANSI_FG_GREEN
 	          << "               0x"

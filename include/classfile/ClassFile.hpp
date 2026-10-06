@@ -200,6 +200,8 @@ private:
     U2 attributesCount;
     std::vector<std::unique_ptr<AttributeInfo>> attributes; 
 
+    std::string sourceFile;
+
     BinaryReader reader;
 };
 
