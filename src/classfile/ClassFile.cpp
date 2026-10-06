@@ -28,6 +28,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 
 std::string to_string(VerificationTypeTag tag)
@@ -65,6 +66,32 @@ std::string to_string(VerificationTypeTag tag)
             return std::string(ANSI_FG_RED) + "Unknown/Invalid("
                 + std::to_string(static_cast<int>(tag)) + ")" + ANSI_RESET;
     }
+}
+
+static const char* classifyFrameType(U1 frameType)
+{
+    if (frameType <= 63)
+        return "same_frame";
+
+    if (frameType <= 127)
+        return "same_locals_1_stack_item_frame";
+
+    if (frameType <= 246)
+        return "reserved";
+
+    if (frameType == 247)
+        return "same_locals_1_stack_item_frame_extended";
+
+    if (frameType <= 250)
+        return "chop_frame";
+
+    if (frameType == 251)
+        return "same_frame_extended";
+
+    if (frameType <= 254)
+        return "append_frame";
+
+    return "full_frame"; // 255
 }
 
 static U2 computeArgsSize(const std::string& descriptor, bool isStatic)
@@ -116,6 +143,28 @@ static U2 computeArgsSize(const std::string& descriptor, bool isStatic)
     }
 
     return size;
+}
+
+
+VerificationTypeInfo ClassFile::readVerificationType()
+{
+    U1 tagValue = reader.readU1();
+    if (tagValue > static_cast<U1>(VerificationTypeTag::Uninitialized))
+    {
+        throw std::runtime_error("Invalid verification_type_info tag: " + std::to_string(tagValue));
+    }
+
+    auto tag = static_cast<VerificationTypeTag>(tagValue);
+    U2 extra = 0;
+    if (tag == VerificationTypeTag::Object || tag == VerificationTypeTag::Uninitialized)
+    {
+        extra = reader.readU2();
+    }
+    return 
+    {   
+        tag,
+        extra
+    };
 }
 
 static std::vector<U1> resolveOperands(U4 operandVal, U1 opSize)
@@ -517,11 +566,19 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else if (auto* sm = dynamic_cast<const StackMapAttribute*>(attribute))
     {
-        std::cout << STACKMAP_ATTRIBUTE_COLOUR << pad << "StackMap" << ANSI_RESET << ": number_of_entries=" << sm->entries.size() << "\n";
+        std::cout << STACKMAP_ATTRIBUTE_COLOUR << pad << name << ANSI_RESET << ": number_of_entries=" << sm->entries.size() << "\n";
         U4 index = 1;
         for (auto& frame : sm->entries)
         {
-            std::cout << pad << "  #" << index++ << ": offset=" << frame.offset << "\n";
+            std::cout << pad << "  #" << index++ << ":";
+            if (name == "StackMapTable")
+            {
+                std::cout << " frame_type=" << static_cast<unsigned int>(frame.frameType)
+                          << " -> (" << classifyFrameType(frame.frameType) << ")"
+                          << " offset_delta=" << frame.offsetDelta;
+            }
+            std::cout << " offset=" << frame.offset;
+            std::cout << "\n";
 
             std::cout << pad << "    locals (" << frame.locals.size() << "): ";
             for (auto& v : frame.locals)
@@ -730,6 +787,88 @@ std::unique_ptr<AttributeInfo> ClassFile::readAttribute()
 
         return std::make_unique<LineNumberTableAttribute>(
             nameIndex, length, std::move(lineNumberTable)
+        );
+    }
+
+    if (name == "StackMapTable")
+    {
+        U2 numberOfEntries = reader.readU2();
+        std::vector<StackMapFrame> entries;
+        entries.reserve(numberOfEntries);
+        U4 previousOffset = 0;
+
+        for (U2 i = 0; i < numberOfEntries; ++i)
+        {
+            StackMapFrame frame;
+            frame.frameType = reader.readU1();
+
+            if (frame.frameType <= 63)
+            {
+                frame.offsetDelta = frame.frameType;
+            }
+            else if (frame.frameType <= 127)
+            {
+                frame.offsetDelta = frame.frameType - 64;
+                frame.stack.push_back(readVerificationType());
+            }
+            else if (frame.frameType == 247)
+            {
+                frame.offsetDelta = reader.readU2();
+                frame.stack.push_back(readVerificationType());
+            }
+            else if (frame.frameType >= 248 && frame.frameType <= 250)
+            {
+                frame.offsetDelta = reader.readU2();
+            }
+            else if (frame.frameType == 251)
+            {
+                frame.offsetDelta = reader.readU2();
+            }
+            else if (frame.frameType >= 252 && frame.frameType <= 254)
+            {
+                frame.offsetDelta = reader.readU2();
+                U1 localsToAdd = frame.frameType - 251;
+                frame.locals.reserve(localsToAdd);
+                for (U1 j = 0; j < localsToAdd; ++j)
+                {
+                    frame.locals.push_back(readVerificationType());
+                }
+            }
+            else if (frame.frameType == 255)
+            {
+                frame.offsetDelta = reader.readU2();
+
+                U2 numberOfLocals = reader.readU2();
+                frame.locals.reserve(numberOfLocals);
+                for (U2 j = 0; j < numberOfLocals; ++j)
+                {
+                    frame.locals.push_back(readVerificationType());
+                }
+
+                U2 numberOfStackItems = reader.readU2();
+                frame.stack.reserve(numberOfStackItems);
+                for (U2 j = 0; j < numberOfStackItems; ++j)
+                {
+                    frame.stack.push_back(readVerificationType());
+                }
+            }
+            else
+            {
+                throw std::runtime_error("Reserved StackMapTable frame_type: " + std::to_string(frame.frameType));
+            }
+
+            U4 offset = i == 0 ? frame.offsetDelta : previousOffset + frame.offsetDelta + 1;
+            if (offset > std::numeric_limits<U2>::max())
+            {
+                throw std::runtime_error("StackMapTable frame offset exceeds code limit");
+            }
+            frame.offset = static_cast<U2>(offset);
+            previousOffset = offset;
+            entries.push_back(std::move(frame));
+        }
+
+        return std::make_unique<StackMapAttribute>(
+            nameIndex, length, std::move(entries)
         );
     }
 
@@ -1671,4 +1810,3 @@ void ClassFile::dump()
     dumpMethods();
     dumpAttributes();
 }
-

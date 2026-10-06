@@ -165,6 +165,8 @@ public:
         return nullptr;
     }
 
+    VerificationTypeInfo readVerificationType();
+
 private:
     void saveClassMetadata();
     void saveConstantPoolTags();

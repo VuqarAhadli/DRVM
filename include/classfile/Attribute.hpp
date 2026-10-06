@@ -206,12 +206,21 @@ enum class VerificationTypeTag : U1
 struct VerificationTypeInfo
 {
     VerificationTypeTag tag;
+    
     U2 extra; 
+    /**
+     * 
+     * 7 - CP index
+     * 8 - Offset
+     * 
+     */
 };
 
 struct StackMapFrame
 {
-    U2 offset; 
+    U1 frameType = 0;
+    U2 offsetDelta = 0;
+    U2 offset = 0;
     std::vector<VerificationTypeInfo> locals;
     std::vector<VerificationTypeInfo> stack;
 };
