@@ -1784,7 +1784,7 @@ void ClassFile::dump()
               << '\n'
               << "Constant pool count: "
               << CONSTANT_POOL_COLOUR
-              << constantPoolCount - 1
+              << constantPoolCount 
               << ANSI_RESET
               << "\n"
               << "Interface count:     "
