@@ -174,6 +174,10 @@ private:
     void saveMethods();
     void saveAttributes();
     void dumpAttribute(const AttributeInfo* attribute, int indent = 0);
+
+    void printVerificationTypes (const std::vector<VerificationTypeInfo>& types);
+
+
     std::unique_ptr<AttributeInfo> readAttribute();
     std::string describeConstant(U2 index);
 

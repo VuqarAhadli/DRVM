@@ -254,6 +254,74 @@ ClassFile::ClassFile(const std::string& filename)
 
 }
 
+void ClassFile::printVerificationTypes (const std::vector<VerificationTypeInfo>& types)
+{
+    bool first = true;
+
+    for (const auto& v : types)
+    {
+        if (!first)
+        {
+            std::cout << ' ';
+        }
+        first = false;
+
+        std::cout << to_string(v.tag);
+        
+        switch (v.tag)
+        {
+        case VerificationTypeTag::Object:
+        {
+
+            if(v.extra == 0)
+            {
+                std::cout << " -> (unknown object type)";
+                break;
+            }
+
+            std::cout << "(cp#" << v.extra << ')';
+
+            auto* cls = getConstant<ConstantClass>(v.extra);
+            
+            if (!cls)
+            {
+                std::cout << " -> (invalid constant class)";
+                break;
+            }
+
+            auto* classNameUTF8 = getConstant<ConstantUtf8>(cls->nameIndex);
+
+            if (!classNameUTF8)
+            {
+                std::cout << " -> (invalid class name)";
+                break;
+            }
+
+            std::string className = classNameUTF8->value;
+
+            std::cout << " -> ("
+                      << ANSI_BOLD 
+                      << CLASS_COLOUR
+                      << className
+                      << ANSI_RESET 
+                      << ')';
+
+
+            break;
+        }
+        case VerificationTypeTag::Uninitialized:
+        {
+            std::cout << "(offset=" << v.extra << ')';
+            break;
+        }
+
+        default:
+            break;
+        }
+    }
+        
+}
+
 
 void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
 {
@@ -566,63 +634,51 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
     }
     else if (auto* sm = dynamic_cast<const StackMapAttribute*>(attribute))
     {
+        const bool isTable = (name == "StackMapTable");
+
         std::cout << STACKMAP_ATTRIBUTE_COLOUR << pad << name << ANSI_RESET << ": number_of_entries=" << sm->entries.size() << "\n";
+        
         U4 index = 1;
+
+
         for (auto& frame : sm->entries)
         {
             std::cout << pad << "  #" << index++ << ":";
-            if (name == "StackMapTable")
+            if (isTable)
             {
-                std::cout << " frame_type=" << static_cast<unsigned int>(frame.frameType)
-                          << " -> (" << classifyFrameType(frame.frameType) << ")"
-                          << " offset_delta=" << frame.offsetDelta;
+                std::cout << " frame_type=" 
+                          << static_cast<unsigned int>(frame.frameType)
+                          << " -> (" 
+                          << classifyFrameType(frame.frameType) 
+                          << ")"
+                          << " offset_delta=" 
+                          << frame.offsetDelta;
             }
             std::cout << " offset=" << frame.offset;
             std::cout << "\n";
 
-            std::cout << pad << "    locals (" << frame.locals.size() << "): ";
-            for (auto& v : frame.locals)
+            if (isTable && frame.frameType >= 248 && frame.frameType <= 250)
             {
-                std::cout << to_string(v.tag);
-                if (v.tag == VerificationTypeTag::Object)
-                {
-                    std::cout << "(cp#" << v.extra << ")";
-                    auto* cls = getConstant<ConstantClass>(v.extra);
-                    if(cls)
-                    {
-                        auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
-                        std::cout <<  " -> (" << ANSI_BOLD << CLASS_COLOUR << name->value  << ANSI_RESET << ") ";
-                    }
-                }
-                else if (v.tag == VerificationTypeTag::Uninitialized)
-                {
-                    std::cout << "(offset=" << v.extra << ")";
-                }
-                std::cout << " ";
+                std::cout << pad 
+                        << "    chopped " 
+                        << (251 - frame.frameType) 
+                        << " locals\n";
+                continue;
             }
-            std::cout << "\n";
 
-            std::cout << pad << "    stack (" << frame.stack.size() << "): ";
-            for (auto& v : frame.stack)
+            if (!isTable || frame.frameType >= 252)
             {
-                std::cout << to_string(v.tag);
-                if (v.tag == VerificationTypeTag::Object)
-                {
-                    std::cout << "(cp#" << v.extra << ")";
-                    auto* cls = getConstant<ConstantClass>(v.extra);
-                    if(cls)
-                    {
-                        auto* name = getConstant<ConstantUtf8>(cls->nameIndex);
-                        std::cout <<  " -> (" << ANSI_BOLD << CLASS_COLOUR << name->value << ANSI_RESET << ") ";
-                    }
-                }
-                else if (v.tag == VerificationTypeTag::Uninitialized)
-                {
-                    std::cout << "(offset=" << v.extra << ")";
-                }
-                std::cout << " ";
+                std::cout << pad << "    locals (" << frame.locals.size() << "): ";
+                printVerificationTypes(frame.locals);
+                std::cout << "\n";
             }
-            std::cout << "\n";
+
+            if (!isTable || frame.frameType == 255 || !frame.stack.empty())
+            {
+                std::cout << pad << "    stack (" << frame.stack.size() << "): ";
+                printVerificationTypes(frame.stack);
+                std::cout << "\n";
+            }
         }
     }
     else
@@ -673,7 +729,7 @@ void ClassFile::dumpMethods()
         bool isStatic = methods[i].accessFlags & ACC_STATIC;
         U2 argsSize = computeArgsSize(descriptor->value, isStatic);
 
-        std::cout << "  #" << i << " " << name->value
+        std::cout << "  #" << i + 1 << " " << name->value
                   << " : " << descriptor->value
                   << " (access_flags=0x" << std::hex << methods[i].accessFlags << std::dec << ")"
                   << " args_size=" << argsSize << "\n";
@@ -690,6 +746,7 @@ void ClassFile::dumpMethods()
         if (methods[i].accessFlags & ACC_STATIC) std::cout << " STATIC";
 
         std::cout << "\n";
+
         for (auto& attribute : methods[i].attributes)
         {
             dumpAttribute(attribute.get(), 4);
