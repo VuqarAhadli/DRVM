@@ -18,15 +18,50 @@ Right now, the project can replicate the full behaviour of javap, the Java class
 
 Additionally, the VM can currently execute any Java class file if it does not call any additional external libraries. The VM side is still a work in progress, however. The main goal of the project is to eventually run the original Diamond Rush game on modern platforms such as Linux and macOS and on microcontrollers, if possible.
 
+## To build the project
 
-# To build the project
+You need a C++20-compatible compiler, CMake, and OpenSSL development libraries (/opt/homebrew on macOS, libssl-dev on Debian/Ubuntu, openssl-dev on Alpine).
 
+**macOS**
 ```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zprofile
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
 cmake -B build
-cmake --build build
+cmake --build build --parallel
+```
+> On MacOS, crypto library is included in homebrew
+
+**Alpine Linux**
+```bash
+sudo apk add openssl-dev
+cmake -B build
+cmake --build build --parallel
 ```
 
-> Note: The project does not use any external libraries yet.
+**Debian / Ubuntu**
+```bash
+sudo apt install libssl-dev
+cmake -B build
+cmake --build build --parallel
+```
+
+**Fedora**
+```bash
+sudo dnf install openssl-devel
+cmake -B build
+cmake --build build --parallel
+```
+
+**Arch Linux**
+```bash
+sudo pacman -S openssl
+cmake -B build
+cmake --build build --parallel
+```
+
 
 # How to use the disassembler
 

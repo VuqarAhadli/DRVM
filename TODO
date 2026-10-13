@@ -1,6 +1,5 @@
 TODO:
 1. Accommodate all attributes, such as StackMapTable.
 2. Standard library implementation
-3. SHA-256 checksum for files (OpenSSL)
-4. Windows file metadata support
+3. Windows file metadata support
 
