@@ -23,7 +23,7 @@ std::string sha256(const std::filesystem::path& fullPath)
         throw std::runtime_error("Failed to initialise SHA-256");
     }
 
-    std::array<char, j> buffer{};
+    std::array<char, 8192> buffer{};
 
     while (file)
     {
