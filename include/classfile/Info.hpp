@@ -31,12 +31,14 @@
 #include <sstream>
 #include "Common.hpp"
 #include "Types.hpp"
+#include "SHA256.hpp"
 
 namespace fs = std::filesystem;
 
 struct FileInfo
 {
     std::string fullPath;
+    std::string sha256;
 #if not defined(_WIN32)
     U8 size;
     std::string lastModified;

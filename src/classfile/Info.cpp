@@ -50,6 +50,7 @@ FileInfo getFileInfo(const std::string& path)
     }
 
     info.fullPath = fullPath.string();
+    info.sha256 = sha256(fullPath);
 
 #if not defined(_WIN32)
     std::ostringstream oss;

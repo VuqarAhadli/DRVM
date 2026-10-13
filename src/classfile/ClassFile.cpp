@@ -1812,6 +1812,9 @@ void ClassFile::dump()
     std::cout << "File:                "
               << infoStruct.fullPath
               << "\n"
+              << "SHA-256 checksum:    "
+              << infoStruct.sha256
+              << "\n"
 #if not defined(_WIN32)
               << "File size:           "
               << infoStruct.size 

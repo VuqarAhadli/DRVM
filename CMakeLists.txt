@@ -16,6 +16,9 @@ file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS
     "${PROJECT_SOURCE_DIR}/src/*.cpp"
 )
 
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+
+
 add_executable(drvm
     ${SOURCES}
 )
@@ -61,6 +64,23 @@ target_compile_options(drvmnoopt PRIVATE
     -O0
     -g
 )
+
+
+
+target_link_libraries(drvm PRIVATE OpenSSL::Crypto)
+target_link_libraries(drvmopt PRIVATE OpenSSL::Crypto)
+target_link_libraries(drvmnoopt PRIVATE OpenSSL::Crypto)
+
+target_sources(drvm PRIVATE
+    src/classfile/SHA256.cpp
+)
+target_sources(drvmopt PRIVATE
+    src/classfile/SHA256.cpp
+)
+target_sources(drvmnoopt PRIVATE
+    src/classfile/SHA256.cpp
+)
+
 
 add_custom_target(debugbuild
     DEPENDS
