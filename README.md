@@ -63,6 +63,31 @@ cmake --build build --parallel
 ```
 
 
+**Windows (MSYS2 UCRT64)**
+
+1. Install OpenSSL in the MSYS2 UCRT64 terminal:
+```bash
+pacman -S mingw-w64-ucrt-x86_64-openssl
+```
+
+2. Install a 64-bit Windows JDK (e.g., [Eclipse Temurin](https://adoptium.net/)) and set `JAVA_HOME` in your shell session or `~/.bashrc`:
+```bash
+export JAVA_HOME="/c/Program Files/Java/jdk-27"
+export PATH="$JAVA_HOME/bin:$PATH"
+
+```
+
+
+3. Configure and build DRVM:
+```bash
+cmake -G "MinGW Makefiles" -DOPENSSL_ROOT_DIR="C:/msys64/ucrt64" -B build -S .
+cmake --build build --parallel
+
+```
+
+
+
+
 # How to use the disassembler
 
 After building DRVM, you can use it to inspect a Java `.class` file directly from the command line.

@@ -1815,7 +1815,6 @@ void ClassFile::dump()
               << "SHA-256 checksum:    "
               << infoStruct.sha256
               << "\n"
-#if not defined(_WIN32)
               << "File size:           "
               << infoStruct.size 
               << " bytes"
@@ -1823,7 +1822,6 @@ void ClassFile::dump()
               << "Last modified:       "
               << infoStruct.lastModified
               << "\n"
-#endif
               << "Compiled from:       "
               << sourceFile
               << "\n"

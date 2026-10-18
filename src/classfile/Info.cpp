@@ -19,17 +19,53 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include "classfile/Info.hpp"
 
+#include "classfile/Info.hpp"
 
 FileInfo getFileInfo(const std::string& path)
 {
     FileInfo info{};
 
-#if not defined(_WIN32)
+#if defined(_WIN32)
+
+    WIN32_FILE_ATTRIBUTE_DATA fileData{};
+
+    fs::path filePath = fs::u8path(path);
+
+    if (!GetFileAttributesExW(filePath.c_str(), GetFileExInfoStandard, &fileData))
+    {
+        return info;
+    }
+
+    info.size = (static_cast<U8>(fileData.nFileSizeHigh) << 32) | static_cast<U8>(fileData.nFileSizeLow);
+
+    FILETIME localFileTime{};
+    SYSTEMTIME systemTime{};
+
+    if (!FileTimeToLocalFileTime(&fileData.ftLastWriteTime, &localFileTime))
+    {
+        return info;
+    }
+
+    if (!FileTimeToSystemTime(&localFileTime, &systemTime))
+    {
+        return info;
+    }
+
+    std::tm timeStruct{};
+
+    timeStruct.tm_sec  = systemTime.wSecond;
+    timeStruct.tm_min  = systemTime.wMinute;
+    timeStruct.tm_hour = systemTime.wHour;
+    timeStruct.tm_mday = systemTime.wDay;
+    timeStruct.tm_mon  = systemTime.wMonth - 1;
+    timeStruct.tm_year = systemTime.wYear - 1900;
+
+#else
+
     struct stat fileStat{};
 
-    if(stat(path.c_str(), &fileStat) != 0)
+    if (stat(path.c_str(), &fileStat) != 0)
     {
         return info;
     }
@@ -42,27 +78,30 @@ FileInfo getFileInfo(const std::string& path)
 #endif
 
     std::error_code errorCode;
-    fs::path fullPath = fs::canonical(path,errorCode);
+    fs::path fullPath = fs::canonical(path, errorCode);
 
-    if(errorCode)
+    if (errorCode)
     {
         fullPath = fs::absolute(path, errorCode);
+
+        if (errorCode)
+        {
+            return FileInfo{};
+        }
     }
 
     info.fullPath = fullPath.string();
     info.sha256 = sha256(fullPath);
 
-#if not defined(_WIN32)
     std::ostringstream oss;
-    oss << std::put_time(&timeStruct, "%T - %d %B %Y"); /* Format: "16:26:38 - 11 May 2006" */
-    info.lastModified = oss.str();
+
+#ifdef _WIN32
+    oss << std::put_time(&timeStruct, "%T - %d %B %Y");
+#else
+    oss << std::put_time(&timeStruct, "%T - %d %B %Y");
 #endif
+
+    info.lastModified = oss.str();
 
     return info;
 }
-
-
-/**
- * *** TODO:
- * *** Use Windows API to access file size & last modified date
- */
