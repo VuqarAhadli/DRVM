@@ -1,5 +1,4 @@
 TODO:
-1. Accommodate all attributes, such as StackMapTable.
+1. Accommodate all attributes
 2. Standard library implementation
-3. Windows file metadata support
 

@@ -1821,11 +1821,16 @@ void ClassFile::dump()
               << "\n"
               << "Last modified:       "
               << infoStruct.lastModified
-              << "\n"
-              << "Compiled from:       "
-              << sourceFile
-              << "\n"
-              << "Magic:"
+              << "\n";
+
+    if (!(sourceFile.empty()))
+    {
+        std::cout << "Compiled from:       "
+                  << sourceFile
+                  << "\n";
+    }
+    
+    std::cout << "Magic:"
 	          << ANSI_FG_GREEN
 	          << "               0x"
               << std::hex

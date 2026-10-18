@@ -131,3 +131,8 @@ To get a trace of the executed opcodes:
 <p align="center">
   <img src="drvm_photos/Methods.png" width="500" alt="Methods">
 </p>
+
+
+# Contributors
+
+See CONTRIBUTORS.md for the list of contributors to this project.
