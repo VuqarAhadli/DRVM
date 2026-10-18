@@ -453,6 +453,56 @@ void VM::registerNativeMethods()
         vm.collectGarbage();
         return Value();
     };
+    
+
+    nativeMethods["java/lang/Math.abs:(I)I"] = [](VM&, const MethodCall& call) -> Value
+    {
+        S4 intVal = std::get<S4>(call.args[0]);
+
+        /**
+         *  -INT_MIN is undefined behaviour in C++.
+         *  While, Java defines Math.abs(Integer.MIN_VALUE) == Integer.MIN_VALUE.
+         */
+        S4 absIntVal = (intVal < 0) ? static_cast<S4>(0u - static_cast<U4>(intVal)) : intVal;
+
+        return Value(absIntVal);
+    };
+
+    nativeMethods["java/lang/Math.abs:(J)J"] = [](VM&, const MethodCall& call) -> Value
+    {
+        S8 longVal = std::get<S8>(call.args[0]);
+
+        /**
+         *  -LLONG_MIN is undefined behaviour in C++.
+         *  Java defines Math.abs(Long.MIN_VALUE) == Long.MIN_VALUE.
+         */
+        S8 absLongVal = (longVal < 0) ? static_cast<S8>(0ull - static_cast<U8>(longVal)) : longVal;
+
+        return Value(absLongVal);
+    };
+
+    nativeMethods["java/lang/Math.abs:(F)F"] = [](VM&, const MethodCall& call) -> Value
+    {
+        return Value(std::fabs(std::get<float>(call.args[0])));
+    };
+
+    nativeMethods["java/lang/Math.abs:(D)D"] = [](VM&, const MethodCall& call) -> Value
+    {
+        return Value(std::fabs(std::get<double>(call.args[0])));
+    };
+
+    nativeMethods["java/io/PrintStream.println:(I)V"] = [](VM&, const MethodCall& call) -> Value
+    {
+        std::cout << std::get<S4>(call.args[0]) << '\n';
+        return Value();
+    };
+    nativeMethods["java/io/PrintStream.println:(F)V"] = [](VM&, const MethodCall& call) -> Value
+    {
+        std::cout << std::get<F4>(call.args[0]) << '\n';
+        return Value();
+    };
+
+
 
     /**
      * TODO:
@@ -466,8 +516,6 @@ void VM::registerNativeMethods()
 /**
  * Here are the Java-standard method names in the exact JVM form you can match in your VM, with the native keys spelled as `ClassName.methodName:descriptor`.
 
-- `java/lang/Math.abs:(I)I`
-- `java/lang/Math.abs:(J)J`
 - `java/lang/StringBuffer.append:(Ljava/lang/String;)Ljava/lang/StringBuffer;`
 - `java/lang/System.arraycopy:(Ljava/lang/Object;ILjava/lang/Object;II)V`
 - `java/lang/Integer.byteValue:()B`
@@ -2887,6 +2935,14 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
                     ConstantUtf8*  fieldNameUTF8 = classFile.getConstant<ConstantUtf8>(nameAndType->nameIndex);
                     std::string name = fieldNameUTF8->value;
 
+                    ConstantClass* fieldClass = classFile.getConstant<ConstantClass>(fieldref->classIndex);
+                    std::string fieldClassName = classFile.getConstant<ConstantUtf8>(fieldClass->nameIndex)->value;
+                    if (fieldClassName == "java/lang/System" && name == "out")
+                    {
+                        frame.push(nullptr);   // placeholder PrintStream and while adding more jdk standard functions I will use placeholders.
+                        break;
+                    }
+
                     ClassFile* owner = resolveFieldOwner(&classFile, name);
                     if (!owner)
                     {
@@ -3178,6 +3234,25 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
                     }
 
                     Value objRefVal = frame.pop();
+
+                    ConstantClass* ownerRef = classFile.getConstant<ConstantClass>(methodref->classIndex);
+                    std::string ownerName = classFile.getConstant<ConstantUtf8>(ownerRef->nameIndex)->value;
+                    if (ownerName == "java/io/PrintStream")
+                    {
+                        MethodCall printstreamCall
+                        { 
+                            .receiver = nullptr, 
+                            .args = std::move(args) 
+                        };
+                        Value ignored;
+                        if (!tryInvokeNative(ownerName, methodName, descriptor, printstreamCall, ignored))
+                        {
+                            throw std::runtime_error("PrintStream." + methodName + descriptor + " not implemented");
+                        }
+                        break;
+                    }
+                    
+
                     HeapObject** objectRef = std::get_if<HeapObject*>(&objRefVal);
                     if (!objectRef || !*objectRef)
                     {
