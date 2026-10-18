@@ -135,4 +135,4 @@ To get a trace of the executed opcodes:
 
 # Contributors
 
-See CONTRIBUTORS.md for the list of contributors to this project.
+See [CONTRIBUTORS.md](CONTRIBUTORS.md) for the list of contributors to this project.
