@@ -63,7 +63,7 @@ cmake --build build --parallel
 ```
 
 
-**Windows MSYS2 UCRT64**
+**Windows (MSYS2 UCRT64)**
 
 1. Install OpenSSL in the MSYS2 UCRT64 terminal:
 ```bash
