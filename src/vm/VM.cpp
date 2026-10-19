@@ -512,6 +512,11 @@ void VM::registerNativeMethods()
         std::cout << utf16ToUtf8(asStringData(call.args[0])) << '\n';
         return Value();
     };
+    nativeMethods["java/io/PrintStream.print:(Ljava/lang/String;)V"] = [](VM&, const MethodCall& call) -> Value
+    {
+        std::cout << utf16ToUtf8(asStringData(call.args[0]));
+        return Value();
+    };
 
 
 
@@ -3322,12 +3327,13 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        std::cerr << "CALL "
+                        /*std::cerr << "CALL "
                                   << targetClass->getClassName()
                                   << "."
                                   << targetName->value
                                   << descriptor
                                   << '\n';
+                        */
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
@@ -3430,12 +3436,13 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        std::cerr << "CALL "
+                        /*std::cerr << "CALL "
                                   << targetClass->getClassName()
                                   << "."
                                   << targetName->value
                                   << descriptor
                                   << '\n';
+                        */
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
@@ -3526,12 +3533,13 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        std::cerr << "CALL "
+                        /*std::cerr << "CALL "
                                   << targetClass->getClassName()
                                   << "."
                                   << targetName->value
                                   << descriptor
                                   << '\n';
+                        */
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
@@ -3642,12 +3650,13 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        std::cerr << "CALL "
+                        /*std::cerr << "CALL "
                                   << targetClass->getClassName()
                                   << "."
                                   << targetName->value
                                   << descriptor
                                   << '\n';
+                        */
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
