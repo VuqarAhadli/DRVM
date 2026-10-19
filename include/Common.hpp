@@ -231,3 +231,45 @@ inline UTF16 utf8ToUtf16(const std::string& utf8)
 
     return utf16;
 }
+
+
+inline std::string utf16ToUtf8(const UTF16& utf16)
+{
+    std::string utf8;
+    for (std::size_t i = 0; i < utf16.size(); ++i)
+    {
+        unsigned int codePoint = utf16[i];
+        if (codePoint >= 0xD800 && codePoint <= 0xDBFF && i + 1 < utf16.size() && utf16[i + 1] >= 0xDC00 && utf16[i + 1] <= 0xDFFF)
+        {
+            codePoint = 0x10000 + ((codePoint - 0xD800) << 10) + (utf16[++i] - 0xDC00);
+        }
+        else if (codePoint >= 0xD800 && codePoint <= 0xDFFF)
+        {
+            codePoint = 0xFFFD;
+        }
+
+        if (codePoint <= 0x7F)
+        {
+            utf8.push_back(static_cast<char>(codePoint));
+        }
+        else if (codePoint <= 0x7FF)
+        {
+            utf8.push_back(static_cast<char>(0xC0 | (codePoint >> 6)));
+            utf8.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+        }
+        else if (codePoint <= 0xFFFF)
+        {
+            utf8.push_back(static_cast<char>(0xE0 | (codePoint >> 12)));
+            utf8.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
+            utf8.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+        }
+        else
+        {
+            utf8.push_back(static_cast<char>(0xF0 | (codePoint >> 18)));
+            utf8.push_back(static_cast<char>(0x80 | ((codePoint >> 12) & 0x3F)));
+            utf8.push_back(static_cast<char>(0x80 | ((codePoint >> 6) & 0x3F)));
+            utf8.push_back(static_cast<char>(0x80 | (codePoint & 0x3F)));
+        }
+    }
+    return utf8;
+}

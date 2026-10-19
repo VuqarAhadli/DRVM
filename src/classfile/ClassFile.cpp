@@ -515,32 +515,154 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                     }
                     else if (usesConstantPoolOperand(op))
                     {
-                        std::string resolved = describeConstant(static_cast<U2>(operandVal));
-                        std::cout << "cp=#" << operandVal;
+                        U2 cpIndex;
+
+                        if (op == Opcode::Ldc)
+                        {
+                            cpIndex = static_cast<U1>(code[pc+1]);
+                        }
+                        else
+                        {
+                            cpIndex = static_cast<U2>(static_cast<U2>(code[pc+1]) << 8 | static_cast<U2>((code[pc+2])));
+                        }
+
+                        const std::string resolved = describeConstant(cpIndex);
+
+                        std::cout << "cp=#" << cpIndex;
+
                         if (!resolved.empty())
+                        {                       
                             std::cout << " (" << resolved << ")";
+                        }
+
+                        if (op == Opcode::InvokeInterface)
+                        {
+                            std::cout << " count="
+                                      << static_cast<unsigned int>(code[pc + 3])
+                                      << " reserved="
+                                      << static_cast<unsigned int>(code[pc + 4]);
+                        }
+                        else if (op == Opcode::InvokeDynamic)
+                        {
+                            std::cout << " reserved=0x"
+                                      << std::hex 
+                                      << std::uppercase
+                                      << std::setw(2) 
+                                      << std::right
+                                      << std::setfill('0')
+                                      << static_cast<unsigned int>(code[pc + 3])
+                                      << ' '
+                                      << std::setw(2)
+                                      << static_cast<unsigned int>(code[pc + 4])
+                                      << std::dec << std::nouppercase
+                                      << std::setfill(' ');
+                        }
+                        else if (op == Opcode::MultiANewArray)
+                        {
+                            std::cout << " dimensions="
+                                      << static_cast<unsigned int>(code[pc + 3]);
+                        }
+
+                    }
+                    else if (op == Opcode::BiPush)
+                    {
+                        const U1 raw = static_cast<U1>(operandVal);
+
+                        const int val = (raw & 0x80U) ? static_cast<int>(raw) - 0x100 : static_cast<int>(raw);
+
+                        std::cout << "operand=" 
+                                  << val
+                                  << " (raw=0x"
+                                  << std::hex
+                                  << std::uppercase
+                                  << std::setfill('0')
+                                  << std::setw(2)
+                                  << std::right
+                                  << static_cast<unsigned int>(raw)
+                                  << std::dec
+                                  << std::nouppercase
+                                  << std::setfill(' ')
+                                  << ")";
+                    }
+                    else if (op == Opcode::SiPush)
+                    {
+                        const U2 raw = static_cast<U2>(operandVal);
+                        
+                        const S4 value = (raw & 0x8000U) ? static_cast<S4>(raw) - 0x10000 : static_cast<S4>(raw);
+                        
+                        std::cout << "operand=" << value
+                        << " (raw=0x"
+                        << std::hex << std::uppercase
+                        << std::setfill('0') 
+                        << std::setw(4)
+                        << std::right
+                        << raw
+                        << std::dec << std::nouppercase
+                        << std::setfill(' ')
+                        << ")";
+                    }
+                    else if (op == Opcode::IInc)
+                    {
+                        // higher byte
+                        const U1 index = static_cast<U1>((operandVal >> 8) & 0xFFU);
+                        // lower byte
+                        const U1 rawIncrement = static_cast<U1>(operandVal & 0xFFU);
+                        
+                        const int increment = (rawIncrement & 0x80U) ? static_cast<int>(rawIncrement) - 0x100 : static_cast<int>(rawIncrement);
+                        
+                        std::cout << "index=" << static_cast<unsigned int>(index)
+                                  << " constant=" 
+                                  << increment
+                                  << " (raw=0x"
+                                  << std::hex 
+                                  << std::uppercase
+                                  << std::setfill('0')
+                                  << std::setw(2)
+                                  << std::right
+                                  << static_cast<unsigned int>(index)
+                                  << ' '
+                                  << std::setw(2)
+                                  << static_cast<unsigned int>(rawIncrement)
+                                  << std::dec 
+                                  << std::nouppercase
+                                  << std::setfill(' ')
+                                  << ")";
+                    }
+                    else if (usesBranchOperand(op) && opSize == 4)
+                    {
+                        const U4 raw = operandVal;
+                        // 32 bit signed
+                        const S8 offset = (raw & 0x80000000U) ? static_cast<S8>(raw) - 0x100000000LL : static_cast<S8>(raw);
+
+                        const S8 target = static_cast<S8>(pc) + offset;
+
+                        std::cout << "target=" << target
+                                  << " (offset="
+                                  << (offset >= 0 ? "+" : "")
+                                  << offset
+                                  << ")";
                     }
                     else if (opSize == 1)
-                    {   
+                    {
                         std::cout << "operand="
-                                << std::setw(5)
-                                << operandVal
-                                << " (0x" 
-                                << std::hex 
-                                << std::uppercase
-                                << std::setfill('0')
-                                << std::setw(4)
-                                << std::right
-                                << operandVal
-                                << std::dec 
-                                << std::nouppercase 
-                                << std::setfill(' ')
-                                << ")";
-                    } 
+                                  << std::setw(5)
+                                  << operandVal
+                                  << " (0x"
+                                  << std::hex
+                                  << std::uppercase
+                                  << std::setfill('0')
+                                  << std::setw(2)
+                                  << std::right
+                                  << operandVal
+                                  << std::dec
+                                  << std::nouppercase
+                                  << std::setfill(' ')
+                                  << ")";
+                    }
                     else
                     {
                         std::vector<U1> operands = resolveOperands(operandVal, opSize);
-
+                        
                         std::cout << "operands=";
                         for (U1 op : operands)
                         {

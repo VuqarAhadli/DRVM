@@ -78,6 +78,7 @@ static const UTF16& asStringData(const Value& v)
     return static_cast<StringHeapObject*>(*ref)->value;
 }
 
+
 VM::VM(ClassLoader& loader)
     : loader(loader)
 {
@@ -499,6 +500,16 @@ void VM::registerNativeMethods()
     nativeMethods["java/io/PrintStream.println:(F)V"] = [](VM&, const MethodCall& call) -> Value
     {
         std::cout << std::get<F4>(call.args[0]) << '\n';
+        return Value();
+    };
+    nativeMethods["java/io/PrintStream.println:(J)V"] = [](VM&, const MethodCall& call) -> Value
+    {
+        std::cout << std::get<S8>(call.args[0]) << '\n';
+        return Value();
+    };
+    nativeMethods["java/io/PrintStream.println:(Ljava/lang/String;)V"] = [](VM&, const MethodCall& call) -> Value
+    {
+        std::cout << utf16ToUtf8(asStringData(call.args[0])) << '\n';
         return Value();
     };
 
