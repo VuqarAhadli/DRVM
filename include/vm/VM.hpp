@@ -147,7 +147,11 @@ enum class ArrayType : U1
 class VM
 {
 public:
-    explicit VM(ClassLoader& loader);
+    explicit VM(ClassLoader& loader, bool trace = false, bool debug = false)
+                : trace(trace), debug(debug), loader(loader)
+    {
+        registerNativeMethods();
+    }
 
     
     Value invoke(ClassFile& classFile, const MethodInfo& method);
@@ -157,6 +161,7 @@ public:
     ObjectHeapObject& allocateObject(ClassFile& classFile);
     Value invokeInstance(ClassFile& classFile, const MethodInfo& method, ObjectHeapObject& instance, const std::vector<Value>& args);
     void setTrace(bool trace);
+    void setDebug(bool debug);
 
 
 
@@ -164,6 +169,7 @@ private:
     friend struct FrameGuard;
     U4 gcThreshold = 1024;
     bool trace = false;
+    bool debug = false;
 
     
     Value execute(ClassFile& classFile, const CodeAttribute& code);

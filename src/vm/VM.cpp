@@ -79,15 +79,14 @@ static const UTF16& asStringData(const Value& v)
 }
 
 
-VM::VM(ClassLoader& loader)
-    : loader(loader)
-{
-    registerNativeMethods();
-}
-
 void VM::setTrace (bool trace)
 {
     this->trace = trace;
+}
+
+void VM::setDebug (bool debug)
+{
+    this->debug = debug;
 }
 
 HeapObject* VM::createMultiArray(const std::vector<S4>& dimSizes, std::size_t dimIndex, ValueType leafType, std::size_t totalDimensions)
@@ -3327,13 +3326,16 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        /*std::cerr << "CALL "
-                                  << targetClass->getClassName()
-                                  << "."
-                                  << targetName->value
-                                  << descriptor
-                                  << '\n';
-                        */
+                        if (this->debug)
+                        {
+                            std::cerr << "CALL "
+                                      << targetClass->getClassName()
+                                      << "."
+                                      << targetName->value
+                                      << descriptor
+                                      << '\n';
+                        }
+                        
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
@@ -3436,13 +3438,17 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        /*std::cerr << "CALL "
-                                  << targetClass->getClassName()
-                                  << "."
-                                  << targetName->value
-                                  << descriptor
-                                  << '\n';
-                        */
+                        if (this->debug)
+                        {
+                            std::cerr << "CALL "
+                                      << targetClass->getClassName()
+                                      << "."
+                                      << targetName->value
+                                      << descriptor
+                                      << '\n';
+                        }
+                        
+                        
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
@@ -3533,13 +3539,17 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        /*std::cerr << "CALL "
-                                  << targetClass->getClassName()
-                                  << "."
-                                  << targetName->value
-                                  << descriptor
-                                  << '\n';
-                        */
+                        if (this->debug)
+                        {
+                            std::cerr << "CALL "
+                                      << targetClass->getClassName()
+                                      << "."
+                                      << targetName->value
+                                      << descriptor
+                                      << '\n';
+                        }
+                        
+                        
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
@@ -3650,13 +3660,17 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         ConstantUtf8* targetName = targetClass->getConstant<ConstantUtf8>(targetMethod->nameIndex);
 
-                        /*std::cerr << "CALL "
-                                  << targetClass->getClassName()
-                                  << "."
-                                  << targetName->value
-                                  << descriptor
-                                  << '\n';
-                        */
+                        if (this->debug)
+                        {
+                            std::cerr << "CALL "
+                                      << targetClass->getClassName()
+                                      << "."
+                                      << targetName->value
+                                      << descriptor
+                                      << '\n';
+                        }
+                        
+                        
 
                         Value result = execute(*targetClass, *targetCode, invokedFrame);
 
