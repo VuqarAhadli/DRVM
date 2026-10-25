@@ -506,6 +506,11 @@ void VM::registerNativeMethods()
         std::cout << std::get<S8>(call.args[0]) << '\n';
         return Value();
     };
+    nativeMethods["java/io/PrintStream.print:(J)V"] = [](VM&, const MethodCall& call) -> Value
+    {
+        std::cout << std::get<S8>(call.args[0]);
+        return Value();
+    };
     nativeMethods["java/io/PrintStream.println:(Ljava/lang/String;)V"] = [](VM&, const MethodCall& call) -> Value
     {
         std::cout << utf16ToUtf8(asStringData(call.args[0])) << '\n';
