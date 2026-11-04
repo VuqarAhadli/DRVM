@@ -19,18 +19,19 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-#include <iostream>
 #include <filesystem>
 
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
 #include "vm/VM.hpp"
+#include "maintain/Help.hpp"
+#include "maintain/ProgramInfo.hpp"
 
 int main(int argc, char** argv)
 {
     if (argc < 2)
     {
-        std::cout << "Usage: drvm <class file> [--dump] [--run] [--trace]\n";
+        printUsage();
         return 1;
     }
 
@@ -38,13 +39,38 @@ int main(int argc, char** argv)
     bool run = false;
     bool trace = false;
     bool debug = false;
+    std::string classFilePath;
 
-    for (int i = 2; i < argc; ++i)
+    for (int i = 1; i < argc; ++i)
     {
         std::string arg = argv[i];
 
-
-        if (arg == "--dump")
+        if (arg == "--help")
+        {
+            printHelp();
+            return 0;
+        }
+        else if (arg == "--version")
+        {
+            printVersion();
+            return 0;
+        }
+        else if (arg == "--license")
+        {
+            printLicense();
+            return 0;
+        }
+        else if (arg == "--contributors")
+        {
+            printContributors();
+            return 0;
+        }
+        else if (arg == "--usage")
+        {
+            printUsage();
+            return 0;
+        }
+        else if (arg == "--dump")
         {
             dump = true;
         }
@@ -60,41 +86,58 @@ int main(int argc, char** argv)
         {
             debug = true;
         }
+        else if (arg.rfind("--", 0) == 0)
+        {
+            std::cerr << "Unknown argument: " << arg << '\n';
+            printUsage();
+            return 1;
+        }
+        else if (classFilePath.empty())
+        {
+            classFilePath = arg;
+        }
         else
         {
-            throw std::runtime_error("Unknown argument: " + arg);
+            std::cerr << "Unexpected argument: " << arg << '\n';
+            printUsage();
+            return 1;
         }
     }
 
+    if (classFilePath.empty())
+    {
+        std::cerr << "No class file given.\n";
+        printUsage();
+        return 1;
+    }
+
+    if (!dump && !run)
+    {
+        std::cerr << "Nothing to do: pass --dump and/or --run.\n";
+        return 1;
+    }
 
     try
     {
-        ClassFile cls(argv[1]);
+        ClassFile cls(classFilePath);
 
         if (dump)
         {
             cls.dump();
-            return 0;
         }
 
         if (run)
         {
-            std::filesystem::path classPath = std::filesystem::path(argv[1]).parent_path();
-
+            std::filesystem::path classPath = std::filesystem::absolute(classFilePath).parent_path();
             std::filesystem::path runtimePath = classPath.parent_path() / "runtime" / "classes";
 
-            ClassLoader loader(
-                classPath.string(),
-                runtimePath.string()
-            );
+            ClassLoader loader(classPath.string(), runtimePath.string());
 
-            VM vm(loader,trace, debug);
-
+            VM vm(loader, trace, debug);
 
             std::cout << "Loading " << cls.getClassName() << '\n';
 
-
-            /* first check main void main(String[] args) */
+            /* First check for: public static void main(String[] args) */
             const MethodInfo* mainMethod = cls.findMethod("main", "([Ljava/lang/String;)V");
 
             if (mainMethod)
@@ -103,61 +146,43 @@ int main(int argc, char** argv)
                 return 0;
             }
 
-            /*
-            * Initialise the class. | clinit returns void |
-            */
+            /* Initialise the class. <clinit> returns void. */
             const MethodInfo* clinit = cls.findMethod("<clinit>", "()V");
 
             if (clinit)
             {
-                std::cout << "Running... "
-                        << cls.getClassName()
-                        << ".<clinit>()V\n";
+                std::cout << "Running " << cls.getClassName() << ".<clinit>()V\n";
 
                 vm.invoke(cls, *clinit);
 
                 std::cout << "<clinit> completed\n";
             }
 
-            /*
-            * Construct the MIDlet object.
-            */
+            /* Construct the MIDlet object. */
             const MethodInfo* init = cls.findMethod("<init>", "()V");
 
             if (!init)
             {
-                throw std::runtime_error(
-                    cls.getClassName() + " has no <init>()V"
-                );
+                throw std::runtime_error(cls.getClassName() + " has no <init>()V");
             }
 
             ObjectHeapObject& instance = vm.allocateObject(cls);
 
-            std::cout << "Running "
-                    << cls.getClassName()
-                    << ".<init>()V\n";
+            std::cout << "Running " << cls.getClassName() << ".<init>()V\n";
 
-            vm.invokeInstance(
-                cls, *init, instance, {}
-            );
+            vm.invokeInstance(cls, *init, instance, {});
 
             std::cout << "<init> completed\n";
 
-            /*
-            * Enter the MIDlet lifecycle.
-            */
+            /* Enter the MIDlet lifecycle. */
             const MethodInfo* startApp = cls.findMethod("startApp", "()V");
 
             if (!startApp)
             {
-                throw std::runtime_error(
-                    cls.getClassName() + " has no startApp()V"
-                );
+                throw std::runtime_error(cls.getClassName() + " has no startApp()V");
             }
 
-            std::cout << "Running "
-                    << cls.getClassName()
-                    << ".startApp()V\n";
+            std::cout << "Running " << cls.getClassName() << ".startApp()V\n";
 
             vm.invokeInstance(cls, *startApp, instance, {});
 
@@ -166,10 +191,7 @@ int main(int argc, char** argv)
     }
     catch (const std::exception& e)
     {
-        std::cerr << "\nVM error: "
-                  << e.what()
-                  << '\n';
-
+        std::cerr << "\nVM error: " << e.what() << '\n';
         return 1;
     }
 
