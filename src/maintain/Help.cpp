@@ -5,8 +5,9 @@ void printHelp()
 {
     std::cout << "DRVM is a small JVM and java class file disassembler mainly designed for reverse engineering.\n"
               << "Version: " << DRVM_VERSION << "\n"
-              << "Source code: https://github.com/VuqarAhadli/DRVM\n"
-              << "Options:\n"
+              << "Source code: https://github.com/VuqarAhadli/DRVM\n";
+    printUsage();
+    std::cout << "Options:\n"
               << "  --dump            Dump the class file information.\n"
               << "  --run             Run the class file.\n"
               << "  --trace           Enable tracing of execution.\n"
