@@ -27,7 +27,7 @@ void printContributors()
 
 void printUsage()
 {
-    std::cout << "Usage: drvm <class file> [--dump] [--run] [--trace]\n";
+    std::cout << "Usage: drvm <class file> [--dump] [--run] [--trace] [--debug]\n";
 }
 
 void printInfo()
