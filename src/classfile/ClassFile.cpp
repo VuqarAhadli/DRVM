@@ -591,15 +591,15 @@ void ClassFile::dumpAttribute(const AttributeInfo* attribute, int indent)
                         const S4 value = (raw & 0x8000U) ? static_cast<S4>(raw) - 0x10000 : static_cast<S4>(raw);
                         
                         std::cout << "operand=" << value
-                        << " (raw=0x"
-                        << std::hex << std::uppercase
-                        << std::setfill('0') 
-                        << std::setw(4)
-                        << std::right
-                        << raw
-                        << std::dec << std::nouppercase
-                        << std::setfill(' ')
-                        << ")";
+                                  << " (raw=0x"
+                                  << std::hex << std::uppercase
+                                  << std::setfill('0') 
+                                  << std::setw(4)
+                                  << std::right
+                                  << raw
+                                  << std::dec << std::nouppercase
+                                  << std::setfill(' ')
+                                  << ")";
                     }
                     else if (op == Opcode::IInc)
                     {
