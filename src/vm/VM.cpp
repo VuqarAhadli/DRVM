@@ -692,7 +692,8 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
             if (trace)
             {
-                std::cout << '['
+                std::cout << "\x1b[33m"
+                          << '['
                           << classFile.getClassName()
                           << "] pc="
                           << std::left
@@ -709,6 +710,7 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
                           << std::dec
                           << "  "
                           << toString(opcode)
+                          << "\x1b[0m"
                           << '\n';
             }
 
@@ -3333,12 +3335,12 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         if (this->debug)
                         {
-                            std::cerr << "CALL "
+                            std::cerr << "\x1b[36mCALL "
                                       << targetClass->getClassName()
                                       << "."
                                       << targetName->value
                                       << descriptor
-                                      << '\n';
+                                      << "\x1b[0m\n";
                         }
                         
 
@@ -3445,12 +3447,12 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         if (this->debug)
                         {
-                            std::cerr << "CALL "
+                            std::cerr << "\x1b[36mCALL "
                                       << targetClass->getClassName()
                                       << "."
                                       << targetName->value
                                       << descriptor
-                                      << '\n';
+                                      << "\x1b[0m\n";
                         }
                         
                         
@@ -3546,12 +3548,12 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         if (this->debug)
                         {
-                            std::cerr << "CALL "
+                            std::cerr << "\x1b[36mCALL "
                                       << targetClass->getClassName()
                                       << "."
                                       << targetName->value
                                       << descriptor
-                                      << '\n';
+                                      << "\x1b[0m\n";
                         }
                         
                         
@@ -3667,12 +3669,12 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                         if (this->debug)
                         {
-                            std::cerr << "CALL "
+                            std::cerr << "\x1b[36mCALL "
                                       << targetClass->getClassName()
                                       << "."
                                       << targetName->value
                                       << descriptor
-                                      << '\n';
+                                      << "\x1b[0m\n";
                         }
                         
                         
