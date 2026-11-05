@@ -1872,7 +1872,7 @@ std::string ClassFile::describeConstant(U2 index)
         case ConstantTag::String:
         {
             auto* s = getConstant<ConstantString>(index);
-            return "\"" + describeConstant(s->stringIndex) + "\"";
+            return "\"" + describeConstant(s->stringIndex) + "\x1b[0m\"";
         }
 
         case ConstantTag::Class:
