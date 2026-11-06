@@ -445,16 +445,108 @@ bool VM::tryInvokeNative(const std::string& className, const std::string& method
     return true;
 }
 
+#include <charconv>
+#include <cmath>
+#include <functional>
+#include <iostream>
+#include <string>
+
+
+namespace
+{
+    /**
+     *  Approximates Java's Float/Double.toString():
+     * 
+     *   1. NaN, Infinity, -Infinity, 0.0, -0.0
+     * 
+     *   2. decimal form for 1e-3 <= |v| < 1e7 (always with at least one fractional digit)
+     * 
+     *   3. otherwise computerized scientific notation, e.g. 1.0E10, 1.234E-5
+     */
+    template <typename T>
+    std::string javaFpToString(T v)
+    {
+        if (std::isnan(v))
+        {
+            return "NaN";
+        } 
+
+        if (std::isinf(v))
+        {
+             return v < 0 ? "-Infinity" : "Infinity";
+        }
+
+        if (v == 0)
+        {
+             return std::signbit(v) ? "-0.0" : "0.0";
+        }
+
+        char buf[64];
+        auto res = std::to_chars(buf, buf + sizeof(buf), v, std::chars_format::scientific);
+        std::string sci(buf, res.ptr);
+
+        bool neg = (sci[0] == '-');
+        /*
+         *  Remove the leading '-' from the scientific notation string for easier processing.
+         *  We will add it back at the end if necessary.
+         */
+        if (neg)
+        {
+             sci.erase(0, 1);
+        }
+
+        size_t ePos = sci.find('e');
+        int exp = std::stoi(sci.substr(ePos + 1));
+        std::string digits;
+        for (size_t i = 0; i < ePos; ++i)
+        {
+            if (sci[i] != '.') digits += sci[i];
+        }
+
+        std::string out;
+        T absV = std::fabs(v);
+
+        if (absV >= static_cast<T>(1e-3) && absV < static_cast<T>(1e7))
+        {
+            if (exp >= 0)
+            {
+                if (digits.size() < static_cast<size_t>(exp) + 1)
+                {
+                    digits.append(exp + 1 - digits.size(), '0');
+                }
+                out = digits.substr(0, exp + 1) + '.';
+                out += (digits.size() > static_cast<size_t>(exp) + 1) ? digits.substr(exp + 1) : "0";
+            }
+            else
+            {
+                out = "0." + std::string(-exp - 1, '0') + digits;
+            }
+        }
+        else
+        {
+            out = digits.substr(0, 1) + '.';
+            out += (digits.size() > 1) ? digits.substr(1) : "0";
+            out += 'E' + std::to_string(exp);
+        }
+
+        return neg ? "-" + out : out;
+    }
+}
+
 void VM::registerNativeMethods()
 {
-
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    //  java/lang/System
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     nativeMethods["java/lang/System.gc:()V"] = [](VM& vm, const MethodCall&) -> Value
     {
         vm.collectGarbage();
         return Value();
     };
-    
 
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    //  java/lang/Math.abs
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     nativeMethods["java/lang/Math.abs:(I)I"] = [](VM&, const MethodCall& call) -> Value
     {
         S4 intVal = std::get<S4>(call.args[0]);
@@ -491,45 +583,72 @@ void VM::registerNativeMethods()
         return Value(std::fabs(std::get<double>(call.args[0])));
     };
 
-    nativeMethods["java/io/PrintStream.println:(I)V"] = [](VM&, const MethodCall& call) -> Value
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    //  java/io/PrintStream.print / println
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    auto registerPrint = [this](const std::string& desc, std::function<std::string(const Value&)> fmt)
     {
-        std::cout << std::get<S4>(call.args[0]) << '\n';
-        return Value();
-    };
-    nativeMethods["java/io/PrintStream.println:(F)V"] = [](VM&, const MethodCall& call) -> Value
-    {
-        std::cout << std::get<F4>(call.args[0]) << '\n';
-        return Value();
-    };
-    nativeMethods["java/io/PrintStream.println:(J)V"] = [](VM&, const MethodCall& call) -> Value
-    {
-        std::cout << std::get<S8>(call.args[0]) << '\n';
-        return Value();
-    };
-    nativeMethods["java/io/PrintStream.print:(J)V"] = [](VM&, const MethodCall& call) -> Value
-    {
-        std::cout << std::get<S8>(call.args[0]);
-        return Value();
-    };
-    nativeMethods["java/io/PrintStream.println:(Ljava/lang/String;)V"] = [](VM&, const MethodCall& call) -> Value
-    {
-        std::cout << utf16ToUtf8(asStringData(call.args[0])) << '\n';
-        return Value();
-    };
-    nativeMethods["java/io/PrintStream.print:(Ljava/lang/String;)V"] = [](VM&, const MethodCall& call) -> Value
-    {
-        std::cout << utf16ToUtf8(asStringData(call.args[0]));
-        return Value();
+        nativeMethods["java/io/PrintStream.print:" + desc + "V"] = [fmt](VM&, const MethodCall& call) -> Value
+        {
+            std::cout << fmt(call.args[0]);
+            return Value();
+        };
+        nativeMethods["java/io/PrintStream.println:" + desc + "V"] = [fmt](VM&, const MethodCall& call) -> Value
+        {
+            std::cout << fmt(call.args[0]) << '\n';
+            return Value();
+        };
     };
 
+    registerPrint("(I)", [](const Value& v)
+    {
+        return std::to_string(std::get<S4>(v)); 
+    });
 
+    registerPrint("(J)", [](const Value& v) 
+    { 
+        return std::to_string(std::get<S8>(v)); 
+    });
+
+    registerPrint("(F)", [](const Value& v)
+    { 
+        return javaFpToString(std::get<F4>(v)); 
+    });
+    registerPrint("(D)", [](const Value& v) 
+    { 
+        return javaFpToString(std::get<double>(v)); 
+    });
+
+
+    registerPrint("(Z)", [](const Value& v) -> std::string
+    {
+        return std::get<S4>(v) ? "true" : "false";
+    });
+
+
+    registerPrint("(C)", [](const Value& v)
+    {
+        return utf16ToUtf8(std::u16string(1, static_cast<char16_t>(std::get<S4>(v))));
+    });
+
+    registerPrint("(Ljava/lang/String;)", [](const Value& v)
+    {
+        return utf16ToUtf8(asStringData(v));
+    });
+
+
+    nativeMethods["java/io/PrintStream.println:()V"] = [](VM&, const MethodCall&) -> Value
+    {
+        std::cout << '\n';
+        return Value();
+    };
 
     /**
      * TODO:
      *  1. replace graphic api with SDL
-     * 
+     *  2. println/print (Ljava/lang/Object;)V  -> needs Object.toString virtual dispatch
+     *  3. println/print ([C)V                  -> needs array layout
      */
-  
 }
 
 
