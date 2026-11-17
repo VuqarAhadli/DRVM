@@ -147,11 +147,7 @@ enum class ArrayType : U1
     TLong    = 11
 };
 
-struct RandomClassInstance
-{
-    ObjectHeapObject* object;
-    std::unique_ptr<JavaRandom> randomNumberGenerator;
-};
+
 
 class VM
 {
@@ -201,8 +197,7 @@ private:
     std::unordered_map<std::string, NativeMethod> nativeMethods;
     void registerNativeMethods();
     bool tryInvokeNative(const std::string& className, const std::string& methodName, const std::string& descriptor, const MethodCall& call, Value& outResult);
-    std::vector<RandomClassInstance> randomNumberGenerators;
-    JavaRandom& getRandomGenerator(ObjectHeapObject* obj);
+
 };
 
 struct FrameGuard

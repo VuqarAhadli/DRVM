@@ -648,21 +648,25 @@ void VM::registerNativeMethods()
             throw std::runtime_error("Random.<init>: null cannot initialise instance of Random");
         }
 
-        vm.randomNumberGenerators.emplace_back
-        (
-            RandomClassInstance
-            {
-                .object = call.receiver,
-                .randomNumberGenerator = std::make_unique<JavaRandom>()
-            }
-        );
+        call.receiver->nativeData.emplace<JavaRandom>();
 
         return {};
     };
 
     nativeMethods["java/util/Random.nextInt:(I)I"] = [](VM& vm, const MethodCall& call) -> Value
     {
+        if (!call.receiver)
+        {
+            throw std::runtime_error("Random.nextInt: null receiver");
+        }
 
+        auto* rng = std::any_cast<JavaRandom>(&call.receiver->nativeData);
+        if (!rng)
+        {
+            throw std::runtime_error("Random insrance is not initialised");
+        }
+
+        return rng->nextInt(std::get<S4>(call.args.at(0)));
     };
 
     /**
@@ -762,24 +766,24 @@ ObjectHeapObject& VM::allocateObject(ClassFile& classFile)
     return *object;
 }
 
-JavaRandom& VM::getRandomGenerator(ObjectHeapObject* obj)
-{
-    auto it = std::find_if(
-        randomNumberGenerators.begin(),
-        randomNumberGenerators.end(),
-        [obj](const RandomClassInstance& instance)
-        {
-            return instance.object == obj;
-        }
-    );
+// JavaRandom& VM::getRandomGenerator(ObjectHeapObject* obj)
+// {
+//     auto it = std::find_if(
+//         randomNumberGenerators.begin(),
+//         randomNumberGenerators.end(),
+//         [obj](const RandomClassInstance& instance)
+//         {
+//             return instance.object == obj;
+//         }
+//     );
 
-    if (it == randomNumberGenerators.end())
-    {
-        throw std::runtime_error("Random instance not initialised");
-    }
-    
-    return *it->randomNumberGenerator;
-}
+//     if (it == randomNumberGenerators.end())
+//     {
+//         throw std::runtime_error("Random instance not initialised");
+//     }
+
+//     return *it->randomNumberGenerator;
+// }
 
 Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 {

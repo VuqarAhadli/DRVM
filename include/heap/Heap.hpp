@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <any>
 #include "Common.hpp"
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
@@ -144,6 +145,9 @@ public:
     ClassFile* javaClass;
 
     std::unordered_map<std::string, FieldSlot> fields;
+
+    std::any nativeData;
+
 
     explicit ObjectHeapObject(ClassFile* javaClass)
         : HeapObject(HeapType::Object),
