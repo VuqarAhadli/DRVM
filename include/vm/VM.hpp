@@ -34,12 +34,14 @@
 #include <sstream>
 #include <unordered_set>
 #include <charconv>
+#include <random>
 #include "Types.hpp"
 #include "classfile/ClassFile.hpp"
 #include "vm/ClassLoader.hpp"
 #include "heap/Heap.hpp"
 #include "Opcode.hpp"
 #include "vm/JavaException.hpp"
+#include <java/util/Random.hpp>
 
 /**
  *        Union
@@ -145,6 +147,12 @@ enum class ArrayType : U1
     TLong    = 11
 };
 
+struct RandomClassInstance
+{
+    ObjectHeapObject* object;
+    std::unique_ptr<JavaRandom> randomNumberGenerator;
+};
+
 class VM
 {
 public:
@@ -193,8 +201,8 @@ private:
     std::unordered_map<std::string, NativeMethod> nativeMethods;
     void registerNativeMethods();
     bool tryInvokeNative(const std::string& className, const std::string& methodName, const std::string& descriptor, const MethodCall& call, Value& outResult);
-
-    
+    std::vector<RandomClassInstance> randomNumberGenerators;
+    JavaRandom& getRandomGenerator(ObjectHeapObject* obj);
 };
 
 struct FrameGuard

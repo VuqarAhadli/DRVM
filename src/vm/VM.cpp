@@ -529,6 +529,7 @@ namespace
 
 void VM::registerNativeMethods()
 {
+
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     //  java/lang/System
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
@@ -637,6 +638,33 @@ void VM::registerNativeMethods()
         return Value();
     };
 
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    //  java/util/Random
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    nativeMethods["java/util/Random.<init>:()V"] = [](VM& vm, const MethodCall& call) -> Value
+    {
+        if (!call.receiver)
+        {
+            throw std::runtime_error("Random.<init>: null cannot initialise instance of Random");
+        }
+
+        vm.randomNumberGenerators.emplace_back
+        (
+            RandomClassInstance
+            {
+                .object = call.receiver,
+                .randomNumberGenerator = std::make_unique<JavaRandom>()
+            }
+        );
+
+        return {};
+    };
+
+    nativeMethods["java/util/Random.nextInt:(I)I"] = [](VM& vm, const MethodCall& call) -> Value
+    {
+
+    };
+
     /**
      * TODO:
      *  1. replace graphic api with SDL
@@ -732,6 +760,25 @@ ObjectHeapObject& VM::allocateObject(ClassFile& classFile)
     }
 
     return *object;
+}
+
+JavaRandom& VM::getRandomGenerator(ObjectHeapObject* obj)
+{
+    auto it = std::find_if(
+        randomNumberGenerators.begin(),
+        randomNumberGenerators.end(),
+        [obj](const RandomClassInstance& instance)
+        {
+            return instance.object == obj;
+        }
+    );
+
+    if (it == randomNumberGenerators.end())
+    {
+        throw std::runtime_error("Random instance not initialised");
+    }
+    
+    return *it->randomNumberGenerator;
 }
 
 Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
