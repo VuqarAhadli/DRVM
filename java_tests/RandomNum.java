@@ -4,9 +4,12 @@ public class RandomNum {
     public static void main(String[] args) {
 
         Random rand = new Random();
-
-        int number = rand.nextInt(100);
-
-        System.out.println(number);
+		int attempts = 0;
+        while(rand.nextInt(99999) != 16)
+		{
+			attempts++;
+		}
+		System.out.print("Total attempts java/util/Random.nextInt(I)I:\t");
+        System.out.println(attempts);
     }
 }
