@@ -42,7 +42,7 @@
 #include "Opcode.hpp"
 #include "vm/JavaException.hpp"
 #include <java/util/Random.hpp>
-
+#include "java/lang/System.hpp"
 /**
  *        Union
  *     |  |  |  |  

@@ -78,9 +78,8 @@ S4 JavaRandom::nextInt(S4 bound)
 	{
 		bits = static_cast<S4>(r);
 		val = bits % bound;
-		r = next(31);
 	}
-	while (bits - val + (bound - 1) < 0);
+	while (bits - val + (bound - 1) < 0 && (r = next(31), true));
 
 	return val;
 }
