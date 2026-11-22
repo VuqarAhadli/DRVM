@@ -535,7 +535,7 @@ void VM::registerNativeMethods()
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     nativeMethods["java/lang/System.gc:()V"] = [](VM& vm, const MethodCall&) -> Value
     {
-        vm.collectGarbage();
+        JavaSystem::gc(vm);
         return Value();
     };
 
@@ -649,6 +649,18 @@ void VM::registerNativeMethods()
         }
 
         call.receiver->nativeData.emplace<JavaRandom>();
+
+        return {};
+    };
+
+    nativeMethods["java/util/Random.<init>:(J)V"] = [](VM& vm, const MethodCall& call) -> Value
+    {
+        if (!call.receiver)
+        {
+            throw std::runtime_error("Random.<init>: null cannot initialise instance of Random");
+        }
+
+        call.receiver->nativeData.emplace<JavaRandom>(std::get<S8>(call.args.at(0)));
 
         return {};
     };
