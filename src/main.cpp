@@ -189,6 +189,17 @@ int main(int argc, char** argv)
             std::cout << "startApp completed\n";
         }
     }
+    catch (const JavaException& javaEx)
+    {
+        std::string className = javaEx.className;
+        std::cerr << "\nUncaught Java exception: " << className;
+        if (javaEx.hasMessage)
+        {
+            std::cerr << ": " << javaEx.message;
+        }
+        std::cerr << '\n';
+        return 1;
+    }
     catch (const std::exception& e)
     {
         std::cerr << "\nVM error: " << e.what() << '\n';

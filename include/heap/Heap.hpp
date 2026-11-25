@@ -137,12 +137,20 @@ struct FieldSlot
     HeapObject* reference = nullptr; 
 };
 
-
+enum class ObjectState : U1
+{
+    Uninitialised,
+    Initialised
+};
 
 class ObjectHeapObject : public HeapObject
 {
 public:
     ClassFile* javaClass;
+
+    ObjectState state = ObjectState::Uninitialised;
+
+    HeapObject* throwableMessage = nullptr;
 
     std::unordered_map<std::string, FieldSlot> fields;
 
@@ -157,6 +165,11 @@ public:
 
     void trace(std::vector<HeapObject*>& out) const override
     {
+        if (throwableMessage)
+        {
+            out.push_back(throwableMessage);
+        }
+
         for (auto& [name, slot] : fields)
         {
             if (slot.type == ValueType::Reference && slot.reference != nullptr)

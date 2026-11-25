@@ -352,13 +352,16 @@ public class Test
         total += object.multiply(6, 7);
 
         int result = total;
+        System.out.print("Total is: ");
+        System.out.println(total);
+
 
         if (result == 1581354567)
         {
             return;
         }
 
-        throw new RuntimeException();
+        throw new RuntimeException("Wrong result");
     }
 
     interface Calculator

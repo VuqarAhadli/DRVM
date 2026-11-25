@@ -27,5 +27,7 @@
 struct JavaException
 {
     HeapObject* exceptionObject;
-    std::string className; 
+    std::string className;
+    bool hasMessage;
+    std::string message;
 };
