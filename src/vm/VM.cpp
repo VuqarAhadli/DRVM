@@ -434,7 +434,7 @@ ClassFile* VM::resolveMethodOwner(ClassFile* startClass, const std::string& name
 
 bool VM::tryInvokeNative(const std::string& className, const std::string& methodName, const std::string& descriptor, const MethodCall& call, Value& outResult)
 {
-    auto key = className + "." + methodName + ":" + descriptor;
+    auto key = className + "." + methodName + descriptor;
     auto it = nativeMethods.find(key);
     if (it == nativeMethods.end())
     {
@@ -533,16 +533,51 @@ void VM::registerNativeMethods()
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     //  java/lang/System
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
-    nativeMethods["java/lang/System.gc:()V"] = [](VM& vm, const MethodCall&) -> Value
+    nativeMethods["java/lang/System.gc()V"] = [](VM& vm, const MethodCall&) -> Value
     {
         JavaSystem::gc(vm);
         return Value();
     };
 
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    //  java/lang/Object
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
+    ///java/lang/Object.<init>()V
+    nativeMethods["java/lang/Object.<init>()V"] = [](VM&, const MethodCall&) -> Value
+    {
+        return Value();
+    };
+
+    auto initThrowable = [](VM&, const MethodCall& call) -> Value
+    {
+        call.receiver->throwableMessage = nullptr;
+        if (!call.args.empty())
+        {
+            auto* message = std::get_if<HeapObject*>(&call.args.front());
+            if (!message || (*message && (*message)->type != HeapType::String))
+            {
+                throw std::runtime_error("Throwable constructor requires a String message");
+            }
+
+            call.receiver->throwableMessage = *message;
+        }
+
+        return Value();
+    };
+
+    nativeMethods["java/lang/Throwable.<init>()V"] = initThrowable;
+    nativeMethods["java/lang/Throwable.<init>(Ljava/lang/String;)V"] = initThrowable;
+    nativeMethods["java/lang/Error.<init>()V"] = initThrowable;
+    nativeMethods["java/lang/Error.<init>(Ljava/lang/String;)V"] = initThrowable;
+    nativeMethods["java/lang/RuntimeException.<init>()V"] = initThrowable;
+    nativeMethods["java/lang/RuntimeException.<init>(Ljava/lang/String;)V"] = initThrowable;
+    nativeMethods["java/lang/Exception.<init>()V"] = initThrowable;
+    nativeMethods["java/lang/Exception.<init>(Ljava/lang/String;)V"] = initThrowable;
+    
+    // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     //  java/lang/Math.abs
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
-    nativeMethods["java/lang/Math.abs:(I)I"] = [](VM&, const MethodCall& call) -> Value
+    nativeMethods["java/lang/Math.abs(I)I"] = [](VM&, const MethodCall& call) -> Value
     {
         S4 intVal = std::get<S4>(call.args[0]);
 
@@ -555,7 +590,7 @@ void VM::registerNativeMethods()
         return Value(absIntVal);
     };
 
-    nativeMethods["java/lang/Math.abs:(J)J"] = [](VM&, const MethodCall& call) -> Value
+    nativeMethods["java/lang/Math.abs(J)J"] = [](VM&, const MethodCall& call) -> Value
     {
         S8 longVal = std::get<S8>(call.args[0]);
 
@@ -568,12 +603,12 @@ void VM::registerNativeMethods()
         return Value(absLongVal);
     };
 
-    nativeMethods["java/lang/Math.abs:(F)F"] = [](VM&, const MethodCall& call) -> Value
+    nativeMethods["java/lang/Math.abs(F)F"] = [](VM&, const MethodCall& call) -> Value
     {
         return Value(std::fabs(std::get<float>(call.args[0])));
     };
 
-    nativeMethods["java/lang/Math.abs:(D)D"] = [](VM&, const MethodCall& call) -> Value
+    nativeMethods["java/lang/Math.abs(D)D"] = [](VM&, const MethodCall& call) -> Value
     {
         return Value(std::fabs(std::get<double>(call.args[0])));
     };
@@ -583,12 +618,12 @@ void VM::registerNativeMethods()
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     auto registerPrint = [this](const std::string& desc, std::function<std::string(const Value&)> fmt)
     {
-        nativeMethods["java/io/PrintStream.print:" + desc + "V"] = [fmt](VM&, const MethodCall& call) -> Value
+        nativeMethods["java/io/PrintStream.print" + desc + "V"] = [fmt](VM&, const MethodCall& call) -> Value
         {
             std::cout << fmt(call.args[0]);
             return Value();
         };
-        nativeMethods["java/io/PrintStream.println:" + desc + "V"] = [fmt](VM&, const MethodCall& call) -> Value
+        nativeMethods["java/io/PrintStream.println" + desc + "V"] = [fmt](VM&, const MethodCall& call) -> Value
         {
             std::cout << fmt(call.args[0]) << '\n';
             return Value();
@@ -632,7 +667,7 @@ void VM::registerNativeMethods()
     });
 
 
-    nativeMethods["java/io/PrintStream.println:()V"] = [](VM&, const MethodCall&) -> Value
+    nativeMethods["java/io/PrintStream.println()V"] = [](VM&, const MethodCall&) -> Value
     {
         std::cout << '\n';
         return Value();
@@ -641,7 +676,7 @@ void VM::registerNativeMethods()
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
     //  java/util/Random
     // *&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*&*
-    nativeMethods["java/util/Random.<init>:()V"] = [](VM& vm, const MethodCall& call) -> Value
+    nativeMethods["java/util/Random.<init>()V"] = [](VM& vm, const MethodCall& call) -> Value
     {
         if (!call.receiver)
         {
@@ -653,7 +688,7 @@ void VM::registerNativeMethods()
         return {};
     };
 
-    nativeMethods["java/util/Random.<init>:(J)V"] = [](VM& vm, const MethodCall& call) -> Value
+    nativeMethods["java/util/Random.<init>(J)V"] = [](VM& vm, const MethodCall& call) -> Value
     {
         if (!call.receiver)
         {
@@ -665,7 +700,7 @@ void VM::registerNativeMethods()
         return {};
     };
 
-    nativeMethods["java/util/Random.nextInt:(I)I"] = [](VM& vm, const MethodCall& call) -> Value
+    nativeMethods["java/util/Random.nextInt(I)I"] = [](VM& vm, const MethodCall& call) -> Value
     {
         if (!call.receiver)
         {
@@ -693,37 +728,37 @@ void VM::registerNativeMethods()
 /**
  * Here are the Java-standard method names in the exact JVM form you can match in your VM, with the native keys spelled as `ClassName.methodName:descriptor`.
 
-- `java/lang/StringBuffer.append:(Ljava/lang/String;)Ljava/lang/StringBuffer;`
-- `java/lang/System.arraycopy:(Ljava/lang/Object;ILjava/lang/Object;II)V`
-- `java/lang/Integer.byteValue:()B`
-- `java/lang/String.charAt:(I)C`
-- `java/io/InputStream.close:()V`
-- `java/lang/String.compareTo:(Ljava/lang/String;)I`
-- `java/lang/System.currentTimeMillis:()J`
-- `java/lang/StringBuffer.delete:(II)Ljava/lang/StringBuffer;`
-- `java/lang/String.endsWith:(Ljava/lang/String;)Z`
-- `java/lang/Object.equals:(Ljava/lang/Object;)Z`
-- `java/lang/Object.getClass:()Ljava/lang/Class;`
-- `java/lang/Class.getResourceAsStream:(Ljava/lang/String;)Ljava/io/InputStream;`
-- `java/lang/String.indexOf:(I)I`
-- `java/lang/Integer.intValue:()I`
-- `java/lang/String.length:()I`
-- `java/util/Random.nextInt:(I)I`
-- `java/lang/Object.notify:()V`
-- `java/lang/Throwable.printStackTrace:()V`
-- `java/io/PrintStream.println:(Ljava/lang/String;)V`
-- `java/util/Hashtable.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;`
-- `java/io/InputStream.read:()I`
-- `java/lang/StringBuffer.setCharAt:(IC)V`
-- `java/io/InputStream.skip:(J)J`
-- `java/lang/Thread.sleep:(J)V`
-- `java/lang/Thread.start:()V`
-- `java/lang/String.substring:(I)Ljava/lang/String;`
-- `java/lang/String.toLowerCase:()Ljava/lang/String;`
-- `java/lang/Object.toString:()Ljava/lang/String;`
-- `java/lang/String.valueOf:(I)Ljava/lang/String;`
-- `java/lang/Object.wait:()V`
-- `java/lang/Thread.yield:()V`
+- `java/lang/StringBuffer.append(Ljava/lang/String;)Ljava/lang/StringBuffer;`
+- `java/lang/System.arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V`
+- `java/lang/Integer.byteValue()B`
+- `java/lang/String.charAt(I)C`
+- `java/io/InputStream.close()V`
+- `java/lang/String.compareTo(Ljava/lang/String;)I`
+- `java/lang/System.currentTimeMillis()J`
+- `java/lang/StringBuffer.delete(II)Ljava/lang/StringBuffer;`
+- `java/lang/String.endsWith(Ljava/lang/String;)Z`
+- `java/lang/Object.equals(Ljava/lang/Object;)Z`
+- `java/lang/Object.getClass()Ljava/lang/Class;`
+- `java/lang/Class.getResourceAsStream(Ljava/lang/String;)Ljava/io/InputStream;`
+- `java/lang/String.indexOf(I)I`
+- `java/lang/Integer.intValue()I`
+- `java/lang/String.length()I`
+- `java/util/Random.nextInt(I)I`
+- `java/lang/Object.notify()V`
+- `java/lang/Throwable.printStackTrace()V`
+- `java/io/PrintStream.println(Ljava/lang/String;)V`
+- `java/util/Hashtable.put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;`
+- `java/io/InputStream.read()I`
+- `java/lang/StringBuffer.setCharAt(IC)V`
+- `java/io/InputStream.skip(J)J`
+- `java/lang/Thread.sleep(J)V`
+- `java/lang/Thread.start()V`
+- `java/lang/String.substring(I)Ljava/lang/String;`
+- `java/lang/String.toLowerCase()Ljava/lang/String;`
+- `java/lang/Object.toString()Ljava/lang/String;`
+- `java/lang/String.valueOf(I)Ljava/lang/String;`
+- `java/lang/Object.wait()V`
+- `java/lang/Thread.yield()V`
 */
 
 
@@ -4065,12 +4100,25 @@ Value VM::execute(ClassFile& classFile, const CodeAttribute& code, Frame& frame)
 
                     auto* exceptionObject = static_cast<ObjectHeapObject*>(*ref);
                     std::string exceptionClassName = exceptionObject->javaClass->getClassName();
+                    std::string exceptionMessage;
+                    bool hasMessage = exceptionObject->throwableMessage != nullptr;
 
+                    if (exceptionObject->throwableMessage)
+                    {
+                        if (exceptionObject->throwableMessage->type != HeapType::String)
+                        {
+                            throw std::runtime_error("Throwable message is not a String");
+                        }
+
+                        exceptionMessage = utf16ToUtf8(static_cast<StringHeapObject*>(exceptionObject->throwableMessage)->value);
+                    }
 
                     throw JavaException 
                     {
-                        *ref,
-                        exceptionClassName
+                        .exceptionObject = *ref,
+                        .className = exceptionClassName,
+                        .hasMessage = hasMessage,
+                        .message = std::move(exceptionMessage)
                     };
                 }
 
