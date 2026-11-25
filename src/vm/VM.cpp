@@ -716,6 +716,17 @@ void VM::registerNativeMethods()
         return rng->nextInt(std::get<S4>(call.args.at(0)));
     };
 
+    nativeMethods["java/lang/Thread.sleep(J)V"] = [](VM& vm, const MethodCall& call) -> Value
+    {
+        // Source - https://stackoverflow.com/a/10613664
+        // Posted by HighCommander4, modified by community. See post 'Timeline' for change history
+        // Retrieved 2026-11-25, License - CC BY-SA 3.0
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(std::get<S8>(call.args.at(0))));
+
+        return {};
+    };
+
     /**
      * TODO:
      *  1. replace graphic api with SDL
