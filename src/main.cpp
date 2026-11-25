@@ -133,58 +133,65 @@ int main(int argc, char** argv)
 
             ClassLoader loader(classPath.string(), runtimePath.string());
 
-            VM vm(loader, trace, debug);
-
-            std::cout << "Loading " << cls.getClassName() << '\n';
-
-            /* First check for: public static void main(String[] args) */
-            const MethodInfo* mainMethod = cls.findMethod("main", "([Ljava/lang/String;)V");
-
-            if (mainMethod)
+            /* Load entry class so that static fields do not mix when a new class object is invoked */
+            ClassFile* entryClass = loader.loadClass(cls.getClassName());
+            if (!entryClass)
             {
-                vm.invoke(cls, *mainMethod);
-                return 0;
+                throw std::runtime_error("Unable to load entry class \"" + cls.getClassName() + "\"");
             }
 
-            /* Initialise the class. <clinit> returns void. */
-            const MethodInfo* clinit = cls.findMethod("<clinit>", "()V");
+            VM vm(loader, trace, debug);
+
+            std::cout << "Loading " << entryClass->getClassName() << '\n';
+
+            /* Initialise the class before invoking its entry point. */
+            const MethodInfo* clinit = entryClass->findMethod("<clinit>", "()V");
 
             if (clinit)
             {
-                std::cout << "Running " << cls.getClassName() << ".<clinit>()V\n";
+                std::cout << "Running " << entryClass->getClassName() << ".<clinit>()V\n";
 
-                vm.invoke(cls, *clinit);
+                vm.invoke(*entryClass, *clinit);
 
                 std::cout << "<clinit> completed\n";
             }
 
+            /* First check for: public static void main(String[] args) */
+            const MethodInfo* mainMethod = entryClass->findMethod("main", "([Ljava/lang/String;)V");
+
+            if (mainMethod)
+            {
+                vm.invoke(*entryClass, *mainMethod);
+                return 0;
+            }
+
             /* Construct the MIDlet object. */
-            const MethodInfo* init = cls.findMethod("<init>", "()V");
+            const MethodInfo* init = entryClass->findMethod("<init>", "()V");
 
             if (!init)
             {
-                throw std::runtime_error(cls.getClassName() + " has no <init>()V");
+                throw std::runtime_error(entryClass->getClassName() + " has no <init>()V");
             }
 
-            ObjectHeapObject& instance = vm.allocateObject(cls);
+            ObjectHeapObject& instance = vm.allocateObject(*entryClass);
 
-            std::cout << "Running " << cls.getClassName() << ".<init>()V\n";
+            std::cout << "Running " << entryClass->getClassName() << ".<init>()V\n";
 
-            vm.invokeInstance(cls, *init, instance, {});
+            vm.invokeInstance(*entryClass, *init, instance, {});
 
             std::cout << "<init> completed\n";
 
             /* Enter the MIDlet lifecycle. */
-            const MethodInfo* startApp = cls.findMethod("startApp", "()V");
+            const MethodInfo* startApp = entryClass->findMethod("startApp", "()V");
 
             if (!startApp)
             {
-                throw std::runtime_error(cls.getClassName() + " has no startApp()V");
+                throw std::runtime_error(entryClass->getClassName() + " has no startApp()V");
             }
 
-            std::cout << "Running " << cls.getClassName() << ".startApp()V\n";
+            std::cout << "Running " << entryClass->getClassName() << ".startApp()V\n";
 
-            vm.invokeInstance(cls, *startApp, instance, {});
+            vm.invokeInstance(*entryClass, *startApp, instance, {});
 
             std::cout << "startApp completed\n";
         }
